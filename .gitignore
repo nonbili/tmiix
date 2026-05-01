@@ -1,7 +1,10 @@
 build/bin
+build/darwin
 frontend/dist
 frontend/node_modules
 frontend/wailsjs
 tmiix
 
 package.json.md5
+
+.DS_Store

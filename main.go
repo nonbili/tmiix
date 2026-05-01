@@ -50,6 +50,7 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 0x0d, G: 0x11, B: 0x17, A: 1},
+		Linux:            platformLinuxOptions(),
 		OnStartup:        app.startup,
 		OnDomReady:       runtime.WindowShow,
 		OnShutdown:       app.shutdown,

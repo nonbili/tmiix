@@ -4,14 +4,10 @@ package main
 
 import (
 	"crypto/sha256"
-	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 )
-
-//go:embed build/appicon.png
-var appIconPNG []byte
 
 // installDesktopEntry writes a .desktop file and icon into the user's
 // XDG data dir so GNOME/KDE/etc. show the app's logo in the dock and
@@ -39,7 +35,7 @@ func installDesktopEntry() {
 	iconPath := filepath.Join(dataHome, "icons", "tmiix.png")
 	desktopPath := filepath.Join(dataHome, "applications", "tmiix.desktop")
 
-	writeIfChanged(iconPath, appIconPNG)
+	writeIfChanged(iconPath, linuxAppIconPNG)
 
 	desktop := fmt.Sprintf(`[Desktop Entry]
 Type=Application
