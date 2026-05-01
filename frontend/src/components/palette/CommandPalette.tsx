@@ -20,7 +20,8 @@ import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '
 import { TERMINAL_THEMES } from '../../themes'
 import { SYSTEM_UI_THEME_ID, UI_THEMES } from '../../uiThemes'
 import { closeTab, getActiveTab } from '../../state/tabs'
-import { formatAction } from '../../lib/keybindings'
+import { formatActionParts } from '../../lib/keybindings'
+import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
 import { ROOT_COMMAND_ITEMS, filterCommandItems, type CommandItemSpec } from './commandItems'
 import { FooterHint } from './FooterHint'
@@ -313,7 +314,7 @@ export function CommandPalette() {
           empty={<div className="px-3.5 py-4 text-foreground-subtle text-xs">No matching commands.</div>}
           renderItem={(item, { selected }) => {
             const isActive = item.active === true
-            const shortcut = item.shortcut ? formatAction(item.shortcut) : null
+            const shortcutParts = item.shortcut ? formatActionParts(item.shortcut) : null
             return (
               <div
                 className={`w-full flex items-center gap-2.5 border-0 cursor-pointer px-3 py-2.5 rounded-lg text-left ${
@@ -326,10 +327,11 @@ export function CommandPalette() {
                   {item.label}
                 </span>
                 {isActive ? <span className="text-foreground-subtle text-[10px] tracking-[0.08em] uppercase">active</span> : null}
-                {shortcut ? (
-                  <kbd className="text-foreground-subtle text-[10px] tracking-[0.05em] font-mono px-1.5 py-0.5 rounded border border-border bg-elevated">
-                    {shortcut}
-                  </kbd>
+                {shortcutParts ? (
+                  <KbdShortcut
+                    parts={shortcutParts}
+                    className="text-foreground-subtle text-[11px] font-medium px-1.5 py-0.5 rounded border border-border bg-elevated"
+                  />
                 ) : null}
               </div>
             )

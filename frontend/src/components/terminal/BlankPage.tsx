@@ -1,7 +1,8 @@
 import { ArrowLeftRight, Maximize, Menu, PanelLeft, Plus } from 'lucide-react'
-import { formatAction, type KeybindingAction } from '../../lib/keybindings'
+import { formatActionParts, type KeybindingAction } from '../../lib/keybindings'
 import { openPalette, openCommandPalette, toggleSidebar } from '../../state/ui'
 import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
+import { KbdShortcut } from '../KbdShortcut'
 
 const HELP_ITEMS: { action: KeybindingAction; label: string; icon: React.ReactNode; run: () => void }[] = [
   { action: 'palette.new', label: 'New session', icon: <Plus size={14} strokeWidth={1.8} />, run: () => openPalette('new') },
@@ -62,8 +63,8 @@ export function BlankPage() {
 
           <div className="grid grid-cols-1 gap-1">
             {HELP_ITEMS.map(({ action, label, icon, run }) => {
-              const chord = formatAction(action)
-              if (!chord) return null
+              const chordParts = formatActionParts(action)
+              if (!chordParts) return null
               return (
                 <button
                   key={action}
@@ -74,9 +75,10 @@ export function BlankPage() {
                     <span className="opacity-40 group-hover:opacity-100 transition-opacity">{icon}</span>
                     <span className="text-[13px]">{label}</span>
                   </div>
-                  <kbd className="px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted font-mono text-[10px] min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors">
-                    {chord}
-                  </kbd>
+                  <KbdShortcut
+                    parts={chordParts}
+                    className="px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted text-[11px] font-medium min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors"
+                  />
                 </button>
               )
             })}

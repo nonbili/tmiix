@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { useValue } from '@legendapp/state/react'
 import { X } from 'lucide-react'
 import { closeShortcuts, ui$ } from '../../state/ui'
-import { formatAction, KeybindingAction } from '../../lib/keybindings'
+import { formatActionParts, KeybindingAction } from '../../lib/keybindings'
+import { KbdShortcut } from '../KbdShortcut'
 
 type ShortcutGroup = {
   title: string
@@ -40,12 +41,13 @@ const GROUPS: ShortcutGroup[] = [
   },
 ]
 
-function Kbd({ chord }: { chord: string | null }) {
-  if (!chord) return <span className="text-foreground-subtle text-xs italic">unbound</span>
+function Kbd({ parts }: { parts: string[] | null }) {
+  if (!parts) return <span className="text-foreground-subtle text-xs italic">unbound</span>
   return (
-    <kbd className="inline-flex items-center px-1.5 h-5 rounded border border-border bg-elevated text-[11px] font-mono text-foreground-strong">
-      {chord}
-    </kbd>
+    <KbdShortcut
+      parts={parts}
+      className="inline-flex items-center px-1.5 h-5 rounded border border-border bg-elevated text-[11px] font-medium text-foreground-strong"
+    />
   )
 }
 
@@ -102,7 +104,7 @@ export function ShortcutsDialog() {
                     className="flex items-center justify-between gap-4 px-3 py-2 text-sm text-foreground"
                   >
                     <span>{item.label}</span>
-                    <Kbd chord={formatAction(item.action)} />
+                    <Kbd parts={formatActionParts(item.action)} />
                   </div>
                 ))}
               </div>

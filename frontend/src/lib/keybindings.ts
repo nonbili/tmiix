@@ -147,6 +147,10 @@ type Bindings = Partial<Record<KeybindingAction, KeyChord>>
 let compiled: Bindings = {}
 
 function compile(raw: Record<string, string>): Bindings {
+  if (isMac && raw['window.fullscreen'] === 'F11') {
+    raw = { ...raw, 'window.fullscreen': 'Ctrl+Cmd+F' }
+  }
+
   const out: Bindings = {}
   for (const [action, chord] of Object.entries(raw)) {
     const parsed = parseChord(chord)
@@ -167,15 +171,30 @@ export async function loadKeybindings(): Promise<void> {
 export function formatAction(action: KeybindingAction): string | null {
   const chord = compiled[action]
   if (!chord) return null
+  return formatChord(chord)
+}
+
+export function formatChord(chord: KeyChord): string {
+  const parts = formatChordParts(chord)
+  return parts.join('+')
+}
+
+export function formatChordParts(chord: KeyChord): string[] {
   const parts: string[] = []
   if (chord.mod) parts.push(isMac ? '⌘' : 'Ctrl')
   if (chord.meta) parts.push(isMac ? '⌘' : 'Win')
-  if (chord.ctrl) parts.push('Ctrl')
+  if (chord.ctrl) parts.push(isMac ? '⌃' : 'Ctrl')
   if (chord.alt) parts.push(isMac ? '⌥' : 'Alt')
   if (chord.shift) parts.push(isMac ? '⇧' : 'Shift')
   const key = /^f\d{1,2}$/.test(chord.key) || chord.key.length === 1 ? chord.key.toUpperCase() : chord.key
   parts.push(key)
-  return parts.join(isMac ? '' : '+')
+  return parts
+}
+
+export function formatActionParts(action: KeybindingAction): string[] | null {
+  const chord = compiled[action]
+  if (!chord) return null
+  return formatChordParts(chord)
 }
 
 export function matchAction(event: KeyboardEvent): KeybindingAction | null {
