@@ -29,7 +29,7 @@
 :root {
   color-scheme: dark;
   font-family: var(--font-mono);
-  background: var(--color-background);
+  background: transparent;
   color: var(--color-foreground);
   --terminal-bg: #0d1117;
 }
@@ -43,6 +43,7 @@ body,
 
 body {
   overflow: hidden;
+  background: transparent;
 }
 
 .terminal-host .xterm {

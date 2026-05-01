@@ -1,4 +1,5 @@
 import { useValue } from '@legendapp/state/react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -17,7 +18,9 @@ import {
 } from '@dnd-kit/sortable'
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
-import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-react'
+import { WindowIsFullscreen } from '../../../wailsjs/runtime/runtime'
+import { isMac } from '../../lib/keybindings'
 import { closeTab, reorderTabs, setActiveTabId, tabs$ } from '../../state/tabs'
 import { openPalette, toggleSidebar, ui$ } from '../../state/ui'
 import { MiddleTruncate } from '../MiddleTruncate'
@@ -41,6 +44,7 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
     zIndex: isDragging ? 10 : undefined,
     opacity: isDragging ? 0.5 : undefined,
     pointerEvents: isDragging ? ('none' as const) : undefined,
+    '--wails-draggable': 'no-drag',
   }
 
   const hotkeyHint = idx < 9 ? ` (Alt+${idx + 1})` : ''
@@ -48,7 +52,7 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={style as any}
       {...attributes}
       {...listeners}
       className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-all duration-150 ${
@@ -71,6 +75,7 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
         className={`w-4 h-4 inline-flex items-center justify-center rounded-[3px] hover:bg-border-strong hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-colors ${
           active ? 'text-foreground-muted' : 'text-foreground-subtle'
         }`}
+        style={{ '--wails-draggable': 'no-drag' } as any}
         onClick={(e) => {
           e.stopPropagation()
           onClose(tab.id)
@@ -92,6 +97,7 @@ export function TopBar() {
   const sidebarCollapsed = useValue(ui$.sidebarCollapsed)
   const tabs = useValue(tabs$.items)
   const activeTabId = useValue(tabs$.activeTabId)
+  const [fullscreen, setFullscreen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -114,10 +120,47 @@ export function TopBar() {
     }
   }
 
+  useEffect(() => {
+    if (!isMac) return
+
+    let cancelled = false
+    const refreshFullscreen = () => {
+      WindowIsFullscreen()
+        .then((isFullscreen) => {
+          if (!cancelled) setFullscreen(isFullscreen)
+        })
+        .catch(() => {
+          if (!cancelled) setFullscreen(false)
+        })
+    }
+    const refreshAfterTransition = () => {
+      refreshFullscreen()
+      window.setTimeout(refreshFullscreen, 500)
+    }
+
+    refreshFullscreen()
+    window.addEventListener('resize', refreshAfterTransition)
+    window.addEventListener('focus', refreshFullscreen)
+    document.addEventListener('visibilitychange', refreshFullscreen)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('resize', refreshAfterTransition)
+      window.removeEventListener('focus', refreshFullscreen)
+      document.removeEventListener('visibilitychange', refreshFullscreen)
+    }
+  }, [])
+
   return (
-    <header className="flex items-center gap-1 h-[34px] px-2 bg-surface border-b border-border select-none">
+    <header
+      className={`flex gap-1 bg-surface border-b border-border select-none rounded-none ${
+        isMac && !fullscreen ? 'h-[34px] items-center pl-[92px] pr-2' : 'h-[34px] items-center px-2'
+      }`}
+      style={{ '--wails-draggable': 'drag' } as any}
+    >
       <button
         className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted hover:border-border inline-flex items-center justify-center rounded-[3px] border border-transparent shrink-0"
+        style={{ '--wails-draggable': 'no-drag' } as any}
         onClick={toggleSidebar}
         title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}
         aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
@@ -126,7 +169,10 @@ export function TopBar() {
         {sidebarCollapsed ? <PanelLeftOpen size={14} strokeWidth={1.7} /> : <PanelLeftClose size={14} strokeWidth={1.7} />}
       </button>
 
-      <div className="flex items-center gap-0.5 min-w-0 overflow-x-auto flex-1">
+      <div
+        className="flex items-center gap-0.5 min-w-0 overflow-x-auto flex-1"
+        style={{ '--wails-draggable': 'drag' } as any}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -148,16 +194,19 @@ export function TopBar() {
         </DndContext>
         <button
           className="w-6 h-[26px] inline-flex items-center justify-center rounded-[4px] text-foreground-muted hover:text-foreground-strong hover:bg-muted bg-transparent border border-transparent hover:border-border shrink-0"
+          style={{ '--wails-draggable': 'no-drag' } as any}
           onClick={() => openPalette('new')}
           title="New session (Ctrl+T)"
           aria-label="New session"
           type="button"
         >
-          +
+          <Plus size={14} strokeWidth={1.8} />
         </button>
       </div>
 
-      <TopBarMenu />
+      <div style={{ '--wails-draggable': 'no-drag' } as any}>
+        <TopBarMenu />
+      </div>
     </header>
   )
 }

@@ -29,7 +29,7 @@ export type KeyChord = {
   mod: boolean
 }
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 const META_KEYS = new Set(['meta', 'os', 'super', 'hyper', 'command'])
 const CTRL_KEYS = new Set(['control'])

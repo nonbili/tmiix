@@ -10,6 +10,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -51,9 +52,17 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 0x0d, G: 0x11, B: 0x17, A: 1},
 		Linux:            platformLinuxOptions(),
-		OnStartup:        app.startup,
-		OnDomReady:       runtime.WindowShow,
-		OnShutdown:       app.shutdown,
+		Mac: &mac.Options{
+			TitleBar:             mac.TitleBarHidden(),
+			WebviewIsTransparent: true,
+			About: &mac.AboutInfo{
+				Title:   "tmiix",
+				Message: "The missing tmux GUI",
+			},
+		},
+		OnStartup:  app.startup,
+		OnDomReady: runtime.WindowShow,
+		OnShutdown: app.shutdown,
 		Bind: []interface{}{
 			app,
 		},
