@@ -1,0 +1,194 @@
+name: Build desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            artifact: tmiix-linux-amd64
+          - os: macos-15-intel
+            platform: darwin/amd64
+            artifact: tmiix-darwin-amd64
+          - os: macos-15
+            platform: darwin/arm64
+            artifact: tmiix-darwin-arm64
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: install linux deps
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            pkg-config
+
+      - name: install wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+
+      - name: import mac signing cert
+        if: startsWith(matrix.os, 'macos')
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_P12="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+
+          case "$CSC_LINK" in
+            http://*|https://*)
+              curl -fsSL "$CSC_LINK" -o "$CERTIFICATE_P12"
+              ;;
+            file://*)
+              cp "${CSC_LINK#file://}" "$CERTIFICATE_P12"
+              ;;
+            *)
+              printf '%s' "$CSC_LINK" | base64 -D > "$CERTIFICATE_P12"
+              ;;
+          esac
+
+          security import "$CERTIFICATE_P12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CSC_KEY_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: build
+        run: wails build -clean -platform ${{ matrix.platform }}
+
+      - name: notarize mac app
+        if: startsWith(matrix.os, 'macos')
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          APP_PATH="build/bin/tmiix.app"
+          ZIP_PATH="build/bin/tmiix.zip"
+          SIGNING_IDENTITY="Developer ID Application: Nonbili Inc. ($TEAM_ID)"
+
+          cleanup() {
+            rm -f "$ZIP_PATH"
+          }
+          trap cleanup EXIT
+
+          codesign --force \
+            --options runtime \
+            --timestamp \
+            --deep \
+            --keychain "$KEYCHAIN_PATH" \
+            --sign "$SIGNING_IDENTITY" \
+            "$APP_PATH"
+
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+
+          rm -f "$ZIP_PATH"
+          ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+
+          xcrun notarytool submit "$ZIP_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait
+
+          xcrun stapler staple "$APP_PATH"
+          xcrun stapler validate "$APP_PATH"
+          spctl --assess -vv --type execute "$APP_PATH"
+
+      - name: package linux
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          mkdir -p dist
+          tar -C build/bin -czf "dist/${{ matrix.artifact }}.tar.gz" tmiix
+
+      - name: package mac
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          mkdir -p dist
+          ditto -c -k --keepParent build/bin/tmiix.app "dist/${{ matrix.artifact }}.zip"
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: prepare release
+        run: |
+          VER=$(jq -r '.info.productVersion' wails.json)
+          WAILS_TAG="v$VER"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=$WAILS_TAG" >> "$GITHUB_ENV"
+          else
+            if [ "$GITHUB_REF_NAME" != "$WAILS_TAG" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match wails.json version $WAILS_TAG."
+              exit 1
+            fi
+            echo "TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          fi
+
+      - name: release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
+          draft: ${{ github.event_name == 'workflow_dispatch' }}

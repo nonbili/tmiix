@@ -1,5 +1,5 @@
 build/bin
-build/darwin
+!build/darwin/*.plist
 frontend/dist
 frontend/node_modules
 frontend/wailsjs
