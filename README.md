@@ -1,7 +1,7 @@
 <h1 align="center">Tmiix</h1>
 <div align="center">
   <p>The missing tmux GUI</p>
-  <img src="build/appicon.png" width="128" alt="Tmiix">
+  <img src="build/linux/appicon.png" width="128" alt="Tmiix">
 </div>
 
 Tmiix manages local and remote [tmux](https://github.com/tmux/tmux) sessions in a beautiful, intuitive, fast UI.

@@ -9,9 +9,13 @@ import (
 func TestEffectiveSettingsMergesUserOverrides(t *testing.T) {
 	configDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", configDir)
+	t.Setenv("HOME", configDir)
 
-	appConfigDir := filepath.Join(configDir, "tmiix")
-	if err := os.MkdirAll(appConfigDir, 0o755); err != nil {
+	settingsPath, err := settingsConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	userSettings := []byte(`
@@ -22,7 +26,7 @@ size = 15
 "palette.switch" = "Ctrl+P"
 "tab.select.9" = ""
 `)
-	if err := os.WriteFile(filepath.Join(appConfigDir, "settings.toml"), userSettings, 0o644); err != nil {
+	if err := os.WriteFile(settingsPath, userSettings, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
