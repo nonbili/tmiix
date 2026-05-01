@@ -1,22 +1,24 @@
 import { useEffect, useRef } from 'react'
 import { useValue } from '@legendapp/state/react'
-import { Terminal } from '@xterm/xterm'
+import { Terminal, type FontWeight } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { GetSettings, PasteClipboardImage, PasteImageData, ResizeTab, WriteTab } from '../../../wailsjs/go/main/App'
 import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../../wailsjs/runtime/runtime'
-import { matchAction } from '../../lib/keybindings'
+import { isMac, matchAction } from '../../lib/keybindings'
 import { getTheme } from '../../themes'
 import { ui$ } from '../../state/ui'
 import { updateTabLabel } from '../../state/tabs'
 
 const XTERM_SECONDARY_DA_RESPONSE = '[>0;276;0c'
-const ENABLE_WEBGL = true
+const ENABLE_WEBGL = !isMac
 const DEFAULT_FONT = {
   family: '"JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace',
   size: 13,
   lineHeight: 1,
   letterSpacing: 0,
+  weight: '400' as FontWeight,
+  boldWeight: '700' as FontWeight,
 }
 
 async function handleTerminalPaste(tabId: string, terminal: Terminal) {
@@ -154,6 +156,8 @@ export function TerminalTab({ tabId, active, themeId, onClosed }: TerminalTabPro
       fontSize: DEFAULT_FONT.size,
       lineHeight: DEFAULT_FONT.lineHeight,
       letterSpacing: DEFAULT_FONT.letterSpacing,
+      fontWeight: DEFAULT_FONT.weight,
+      fontWeightBold: DEFAULT_FONT.boldWeight,
       theme: getTheme(themeId).theme,
       allowTransparency: false,
       convertEol: false,
@@ -249,6 +253,8 @@ export function TerminalTab({ tabId, active, themeId, onClosed }: TerminalTabPro
         terminal.options.fontSize = settings.font?.size || DEFAULT_FONT.size
         terminal.options.lineHeight = settings.font?.lineHeight || DEFAULT_FONT.lineHeight
         terminal.options.letterSpacing = settings.font?.letterSpacing ?? DEFAULT_FONT.letterSpacing
+        terminal.options.fontWeight = DEFAULT_FONT.weight
+        terminal.options.fontWeightBold = DEFAULT_FONT.boldWeight
         terminal.clearTextureAtlas?.()
         sync()
       })
