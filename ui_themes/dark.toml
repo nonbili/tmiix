@@ -1,0 +1,33 @@
+# Default dark UI theme. Each entry under [colors] becomes a CSS custom
+# property at runtime: `key = "#rrggbb"` is exposed as `--color-<key>` on the
+# document root. Tailwind utilities (bg-surface, text-foreground, ...) read
+# the same vars, so overriding any of these in
+# ~/.config/tmiix/ui_themes/<id>.toml repaints the whole UI.
+
+color_scheme = "dark"
+
+[colors]
+# Layered surfaces, from page background up to small raised chips.
+background        = "#0d1117"
+surface           = "#161b22"   # sidebar, topbar, dialog body, palette panel
+elevated          = "#1c2128"   # menus, dropdowns, selected/hover rows
+muted             = "#22272e"   # tab strip, kbd, badges, code chips
+
+# Text, from highest contrast down to hints/placeholders.
+foreground        = "#c9d1d9"   # default body text
+foreground-strong = "#e6edf3"   # active/selected/heading text
+foreground-muted  = "#8b949e"   # secondary text
+foreground-subtle = "#6e7681"   # tertiary/hint text
+
+border            = "#30363d"
+border-strong     = "#444c56"
+
+accent            = "#58a6ff"
+accent-muted      = "#1f6feb"
+accent-soft       = "rgba(88,166,255,0.12)"   # row-selection fill
+overlay           = "rgba(6,9,14,0.55)"       # modal/palette scrim
+
+# Status hues, used for indicators (e.g. server availability, error text).
+term-green  = "#3fb950"
+term-yellow = "#d29922"
+term-red    = "#f85149"

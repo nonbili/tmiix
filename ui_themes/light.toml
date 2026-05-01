@@ -1,0 +1,26 @@
+# Default light UI theme. See dark.toml for schema notes.
+
+color_scheme = "light"
+
+[colors]
+background        = "#ffffff"
+surface           = "#f6f8fa"
+elevated          = "#eaeef2"
+muted             = "#d8dee4"
+
+foreground        = "#24292f"
+foreground-strong = "#1f2328"
+foreground-muted  = "#57606a"
+foreground-subtle = "#8c959f"
+
+border            = "#d0d7de"
+border-strong     = "#afb8c1"
+
+accent            = "#0969da"
+accent-muted      = "#218bff"
+accent-soft       = "rgba(9,105,218,0.10)"
+overlay           = "rgba(140,150,160,0.40)"
+
+term-green  = "#1a7f37"
+term-yellow = "#9a6700"
+term-red    = "#cf222e"

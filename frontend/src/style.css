@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+/* Token defaults are kept in sync with ui_themes/dark.toml. The runtime
+ * applies the active UI theme by overwriting these custom properties on the
+ * document root, so these values only show through during the brief window
+ * before main.tsx finishes booting. */
+@theme {
+  --color-background: #0d1117;
+  --color-surface: #161b22;
+  --color-elevated: #1c2128;
+  --color-muted: #22272e;
+  --color-foreground: #c9d1d9;
+  --color-foreground-strong: #e6edf3;
+  --color-foreground-muted: #8b949e;
+  --color-foreground-subtle: #6e7681;
+  --color-border: #30363d;
+  --color-border-strong: #444c56;
+  --color-accent: #58a6ff;
+  --color-accent-muted: #1f6feb;
+  --color-accent-soft: rgba(88, 166, 255, 0.12);
+  --color-overlay: rgba(6, 9, 14, 0.55);
+  --color-term-green: #3fb950;
+  --color-term-yellow: #d29922;
+  --color-term-red: #f85149;
+
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-mono);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  --terminal-bg: #0d1117;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+.terminal-host .xterm {
+  height: 100%;
+  width: 100%;
+}
+
+.terminal-host .xterm-screen,
+.terminal-host .xterm-screen canvas {
+  width: 100% !important;
+}
+
+.terminal-host .xterm-scrollable-element > .scrollbar {
+  display: none !important;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.zoom-in {
+  animation-name: zoom-in;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom;
+}

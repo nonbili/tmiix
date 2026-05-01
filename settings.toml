@@ -1,0 +1,70 @@
+# Default tmiix settings.
+#
+# This file is embedded into the binary and used as the baseline. To override,
+# copy any entries below into ~/.config/tmiix/settings.toml. User settings may be
+# partial; unset entries fall back to these defaults.
+
+# Initial terminal theme. Picking a theme from the command palette overrides
+# this and is remembered per-machine in browser storage.
+# Supported: github-dark, dracula, one-dark, tokyo-night, solarized-dark,
+# solarized-light, monokai, gruvbox-dark.
+theme = "github-dark"
+
+# UI theme (window chrome, sidebar, palette). One of: system, light, dark, or
+# the id of a custom theme dropped into ~/.config/tmiix/ui_themes/. "system"
+# follows the OS light/dark preference and updates live.
+ui_theme = "system"
+
+[font]
+# Terminal font family. Keep quotes around comma-separated fallback lists.
+family = '"JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace'
+# Terminal font size in pixels.
+size = 13
+# xterm.js line-height multiplier.
+line_height = 1
+# Extra spacing between characters in pixels.
+letter_spacing = 0
+
+#
+# Keybindings
+#
+# Chord syntax:
+#   "Mod"   - platform modifier (Cmd on macOS, Ctrl elsewhere)
+#   "Ctrl"  - Control key (literal, all platforms)
+#   "Cmd"   - Meta/Command key (literal)
+#   "Alt"   - Alt / Option
+#   "Shift" - Shift
+#
+# Combine with "+". Examples: "Mod+K", "Mod+Shift+K", "Ctrl+\\".
+# Set an entry to an empty string in settings.toml to disable it.
+
+[keybindings]
+# Open the session switch palette.
+"palette.switch"  = "Mod+K"
+# Open the command palette.
+"palette.command" = "Mod+Shift+K"
+# Open the new-session palette.
+"palette.new"     = "Mod+T"
+# Toggle the sidebar.
+"sidebar.toggle"  = "Mod+\\"
+# Paste clipboard contents into the active terminal.
+"terminal.paste"  = "Mod+Shift+V"
+# Close the active tab.
+"tab.close" = "Mod+Shift+W"
+# Move to the next tab.
+"tab.cycle.next" = "Ctrl+Tab"
+# Move to the previous tab.
+"tab.cycle.prev" = "Ctrl+Shift+Tab"
+# Jump to tabs 1 through 9.
+# Override any of these with "" in settings.toml to disable them.
+"tab.select.1" = "Ctrl+1"
+"tab.select.2" = "Ctrl+2"
+"tab.select.3" = "Ctrl+3"
+"tab.select.4" = "Ctrl+4"
+"tab.select.5" = "Ctrl+5"
+"tab.select.6" = "Ctrl+6"
+"tab.select.7" = "Ctrl+7"
+"tab.select.8" = "Ctrl+8"
+"tab.select.9" = "Ctrl+9"
+# Toggle fullscreen window.
+"window.fullscreen" = "F11"
