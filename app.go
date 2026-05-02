@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	goruntime "runtime"
 	"strings"
 	"sync"
 
@@ -80,24 +81,45 @@ func termEnv() []string {
 	return env
 }
 
-// loadLoginShellPath ensures PATH includes the user's interactive shell PATH.
+// loadLoginShellPath ensures PATH includes common macOS tool locations.
 // When launched from a GUI (not a terminal), the process inherits a minimal
 // PATH that typically excludes /usr/local/bin and /opt/homebrew/bin, so tools
 // like tmux cannot be found.
 func loadLoginShellPath() {
-	shell := os.Getenv("SHELL")
-	if shell == "" {
+	extendPath(commonToolDirs())
+}
+
+func commonToolDirs() []string {
+	if goruntime.GOOS != "darwin" {
+		return nil
+	}
+	return []string{
+		"/opt/homebrew/bin",
+		"/usr/local/bin",
+	}
+}
+
+func extendPath(dirs []string) {
+	if len(dirs) == 0 {
 		return
 	}
-	out, err := exec.Command(shell, "-l", "-i", "-c", "printf %s \"$PATH\"").Output()
-	if err != nil {
-		log.Printf("shell path load failed shell=%s err=%v", shell, err)
-		return
+	path := os.Getenv("PATH")
+	seen := map[string]bool{}
+	for _, dir := range strings.Split(path, string(os.PathListSeparator)) {
+		seen[dir] = true
 	}
-	p := strings.TrimSpace(string(out))
-	if p != "" {
-		_ = os.Setenv("PATH", p)
+	for _, dir := range dirs {
+		if dir == "" || seen[dir] {
+			continue
+		}
+		if path == "" {
+			path = dir
+		} else {
+			path += string(os.PathListSeparator) + dir
+		}
+		seen[dir] = true
 	}
+	_ = os.Setenv("PATH", path)
 }
 
 func (a *App) shutdown(ctx context.Context) {

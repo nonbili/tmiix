@@ -201,4 +201,3 @@ jobs:
           files: dist/*
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
