@@ -3,6 +3,7 @@ import { useValue } from '@legendapp/state/react'
 import { Terminal, type FontWeight } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
+import { UnicodeGraphemesAddon } from '@xterm/addon-unicode-graphemes'
 import { GetSettings, PasteClipboardImage, PasteImageData, ResizeTab, WriteTab } from '../../../wailsjs/go/main/App'
 import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../../wailsjs/runtime/runtime'
 import { isMac, matchAction } from '../../lib/keybindings'
@@ -163,10 +164,22 @@ export function TerminalTab({ tabId, active, themeId, onClosed }: TerminalTabPro
       convertEol: false,
       drawBoldTextInBrightColors: false,
       scrollback: 5000,
+      allowProposedApi: true,
     })
 
     const fit = new FitAddon()
     terminal.loadAddon(fit)
+
+    try {
+      const unicodeGraphemesAddon = new UnicodeGraphemesAddon()
+      terminal.loadAddon(unicodeGraphemesAddon)
+      if (terminal.unicode) {
+        terminal.unicode.activeVersion = '15-graphemes'
+      }
+    } catch (e) {
+      console.error('Failed to load UnicodeGraphemesAddon:', e)
+    }
+
     terminal.open(hostRef.current)
 
     const pasteTarget = hostRef.current
