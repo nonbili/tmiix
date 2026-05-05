@@ -1,0 +1,5 @@
+| Linux | macOS (x64) | macOS (arm64) |
+| - | - | - |
+| [Download](https://github.com/nonbili/tmiix/releases/download/v{VER}/tmiix-linux-amd64.tar.gz) | [Download](https://github.com/nonbili/tmiix/releases/download/v{VER}/tmiix-darwin-amd64.dmg) | [Download](https://github.com/nonbili/tmiix/releases/download/v{VER}/tmiix-darwin-arm64.dmg) |
+
+## Changelogs

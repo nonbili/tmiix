@@ -183,8 +183,10 @@ jobs:
       - name: prepare release
         run: |
           VER=$(jq -r '.info.productVersion' wails.json)
-          WAILS_TAG="v$VER"
+          sed -i "s/{VER}/$VER/g" changelogs/template.txt
+          cat changelogs/template.txt changelogs/v$VER.txt > note.txt
 
+          WAILS_TAG="v$VER"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "TAG=$WAILS_TAG" >> "$GITHUB_ENV"
           else
@@ -198,6 +200,6 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: note.txt
           files: dist/*
           tag_name: ${{ env.TAG }}
-          generate_release_notes: true

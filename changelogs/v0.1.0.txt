@@ -1,0 +1,4 @@
+- Initial release
+- Support Linux and macOS (x64/arm64)
+- Native-like UI with system traffic lights integration on macOS
+- Session management and local/remote terminal support

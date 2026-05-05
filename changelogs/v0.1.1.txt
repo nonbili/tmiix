@@ -1,0 +1,2 @@
+- mac: fix detecting tmux path
+- terminal: prevent text overflow
