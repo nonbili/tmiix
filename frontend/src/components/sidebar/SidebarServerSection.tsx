@@ -16,6 +16,7 @@ import {
   attachRemote,
   getActiveRemote,
   getRemoteAttached,
+  killRemoteSession,
   openRemoteShell,
   tabs$,
 } from '../../state/tabs'
@@ -143,6 +144,14 @@ export function SidebarServerSection({ server }: SidebarServerSectionProps) {
                   attached={attached}
                   color={server.color}
                   onClick={() => void attachRemote(server.name, name)}
+                  contextMenuItems={[
+                    {
+                      kind: 'button',
+                      label: 'Kill Session',
+                      danger: true,
+                      onClick: () => void killRemoteSession(server.name, name),
+                    },
+                  ]}
                 />
               )
             })

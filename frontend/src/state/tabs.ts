@@ -1,9 +1,17 @@
 import { observable } from '@legendapp/state'
-import { AttachRemoteSession, AttachSession, CloseTab, OpenRemoteShell, OpenShell } from '../../wailsjs/go/main/App'
+import {
+  AttachRemoteSession,
+  AttachSession,
+  CloseTab,
+  KillRemoteSession,
+  KillSession,
+  OpenRemoteShell,
+  OpenShell,
+} from '../../wailsjs/go/main/App'
 import type { Tab } from '../types'
 import type { StoredTab } from '../lib/storage'
 import { findServer } from './servers'
-import { markRecentSession } from './sessions'
+import { markRecentSession, refreshRemoteSessions, refreshSessions } from './sessions'
 import { remoteKey } from '../lib/session'
 import { ui$ } from './ui'
 
@@ -287,6 +295,54 @@ export function closeTab(id: string) {
   })
 
   void CloseTab(id).catch(() => {})
+}
+
+function closeTabsWhere(predicate: (tab: Tab) => boolean) {
+  const activeTabId = tabs$.activeTabId.peek()
+  const currentTabs = tabs$.items.peek()
+  const idsToClose = currentTabs.filter(predicate).map((tab) => tab.id)
+  if (idsToClose.length === 0) return
+
+  const closeSet = new Set(idsToClose)
+  tabs$.items.set((current) => {
+    const activeIndex = current.findIndex((tab) => tab.id === activeTabId)
+    const nextTabs = current.filter((tab) => !closeSet.has(tab.id))
+    if (activeTabId && closeSet.has(activeTabId)) {
+      const fallback = nextTabs[activeIndex] ?? nextTabs[activeIndex - 1] ?? nextTabs[0]
+      tabs$.activeTabId.set(fallback ? fallback.id : null)
+    }
+    return nextTabs
+  })
+
+  for (const id of idsToClose) {
+    void CloseTab(id).catch(() => {})
+  }
+}
+
+export async function killSession(sessionName: string) {
+  try {
+    await KillSession(sessionName)
+    closeTabsWhere((tab) => tab.kind === 'session' && tab.sessionName === sessionName)
+  } catch (error) {
+    console.error('kill session failed', error)
+    throw error
+  } finally {
+    await refreshSessions()
+  }
+}
+
+export async function killRemoteSession(serverName: string, sessionName: string) {
+  try {
+    await KillRemoteSession(serverName, sessionName)
+    closeTabsWhere(
+      (tab) => tab.kind === 'remote' && tab.serverName === serverName && tab.sessionName === sessionName,
+    )
+  } catch (error) {
+    console.error('kill remote session failed', error)
+    throw error
+  } finally {
+    await refreshRemoteSessions(serverName).catch(() => {})
+  }
 }
 
 export function handleTabClosedFromBackend(id: string) {

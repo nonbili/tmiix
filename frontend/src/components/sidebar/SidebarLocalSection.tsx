@@ -1,7 +1,15 @@
 import { useValue } from '@legendapp/state/react'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { sessions$, refreshSessions } from '../../state/sessions'
-import { attachSession, getActiveSession, getAttachedSessions, openLocalShell, syncLocalTabColors, tabs$ } from '../../state/tabs'
+import {
+  attachSession,
+  getActiveSession,
+  getAttachedSessions,
+  killSession,
+  openLocalShell,
+  syncLocalTabColors,
+  tabs$,
+} from '../../state/tabs'
 import { setLocalColor, ui$ } from '../../state/ui'
 import { sidebar$, toggleLocalExpanded } from '../../state/sidebar'
 import { SidebarSectionHeader } from './SidebarSectionHeader'
@@ -76,6 +84,14 @@ export function SidebarLocalSessions() {
             attached={attachedSessions.has(sessionName)}
             color={localColor}
             onClick={() => void attachSession(sessionName)}
+            contextMenuItems={[
+              {
+                kind: 'button',
+                label: 'Kill Session',
+                danger: true,
+                onClick: () => void killSession(sessionName),
+              },
+            ]}
           />
         ))
       )}

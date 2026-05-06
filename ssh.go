@@ -246,6 +246,22 @@ func (a *App) AttachRemoteSession(tabId, serverName, sessionName string) error {
 	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName)
 }
 
+func (a *App) KillRemoteSession(serverName, sessionName string) error {
+	sessionName = strings.TrimSpace(sessionName)
+	if sessionName == "" {
+		return errors.New("session name is required")
+	}
+	s, err := a.findServer(serverName)
+	if err != nil {
+		return err
+	}
+	args := append(s.sshArgs(false), remoteCommand("tmux", "kill-session", "-t", sessionName))
+	cmd := shellWrappedSSH(args)
+	cmd.Env = termEnv()
+	_, err = a.runSSHPty(cmd, serverName)
+	return err
+}
+
 func (a *App) OpenRemoteShell(tabId, serverName string) error {
 	s, err := a.findServer(serverName)
 	if err != nil {

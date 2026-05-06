@@ -27,8 +27,14 @@ export const ROOT_COMMAND_ITEMS: CommandItemSpec[] = [
     id: 'close-tab',
     label: 'Close tab',
     detail: 'Close the active tab',
-    aliases: ['close', 'tab', 'kill'],
+    aliases: ['close', 'tab'],
     shortcut: 'tab.close',
+  },
+  {
+    id: 'kill-session',
+    label: 'Kill session',
+    detail: "Terminate the active tab's tmux session",
+    aliases: ['kill', 'session', 'terminate', 'tmux', 'active'],
   },
   {
     id: 'toggle-sidebar',

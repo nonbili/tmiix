@@ -19,7 +19,7 @@ import { refreshSessions } from '../../state/sessions'
 import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
 import { TERMINAL_THEMES } from '../../themes'
 import { SYSTEM_UI_THEME_ID, UI_THEMES } from '../../uiThemes'
-import { closeTab, getActiveTab } from '../../state/tabs'
+import { closeTab, getActiveTab, killRemoteSession, killSession } from '../../state/tabs'
 import { formatActionParts } from '../../lib/keybindings'
 import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
@@ -29,6 +29,7 @@ import { FooterHint } from './FooterHint'
 type CommandItem = CommandItemSpec & {
   run: () => void | Promise<void>
   active?: boolean
+  danger?: boolean
 }
 
 const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
@@ -46,6 +47,17 @@ const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
     const active = getActiveTab()
     closeCommandPalette()
     if (active) closeTab(active.id)
+  },
+  'kill-session': () => {
+    const active = getActiveTab()
+    closeCommandPalette()
+    if (active?.kind === 'session' && active.sessionName) {
+      void killSession(active.sessionName)
+      return
+    }
+    if (active?.kind === 'remote' && active.serverName && active.sessionName) {
+      void killRemoteSession(active.serverName, active.sessionName)
+    }
   },
   'toggle-sidebar': () => {
     closeCommandPalette()
@@ -254,7 +266,11 @@ export function CommandPalette() {
   }, [activeUIThemeId, items, mode, open, selectedIndex])
 
   const title =
-    mode === 'theme' ? 'Change theme' : mode === 'ui-theme' ? 'Change UI theme' : 'Command palette'
+    mode === 'theme'
+      ? 'Change theme'
+      : mode === 'ui-theme'
+        ? 'Change UI theme'
+        : 'Command palette'
   const placeholder =
     mode === 'theme'
       ? 'Search themes'
@@ -327,6 +343,9 @@ export function CommandPalette() {
                   {item.label}
                 </span>
                 {isActive ? <span className="text-foreground-subtle text-[10px] tracking-[0.08em] uppercase">active</span> : null}
+                {item.danger ? (
+                  <span className="text-term-red text-[10px] tracking-[0.08em] uppercase">kill</span>
+                ) : null}
                 {shortcutParts ? (
                   <KbdShortcut
                     parts={shortcutParts}

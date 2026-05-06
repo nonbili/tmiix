@@ -1,4 +1,6 @@
 import { MiddleTruncate } from '../MiddleTruncate'
+import { useContextMenu } from '../../lib/useContextMenu'
+import { SidebarSectionMenu, type SectionMenuItem } from './SidebarSectionMenu'
 
 interface SidebarSessionRowProps {
   name: string
@@ -6,30 +8,40 @@ interface SidebarSessionRowProps {
   attached: boolean
   color?: string | null
   onClick: () => void
+  contextMenuItems?: SectionMenuItem[]
 }
 
-export function SidebarSessionRow({ name, active, attached, color, onClick }: SidebarSessionRowProps) {
+export function SidebarSessionRow({ name, active, attached, color, onClick, contextMenuItems }: SidebarSessionRowProps) {
+  const menu = useContextMenu()
+  const hasContextMenu = contextMenuItems && contextMenuItems.length > 0
+
   return (
-    <button
-      className={`w-full flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-[26px] border-l-2 ${
-        active
-          ? 'bg-muted border-l-accent text-foreground-strong'
-          : attached
-            ? 'text-foreground border-l-transparent hover:bg-elevated bg-elevated/40'
-            : 'text-foreground border-l-transparent hover:bg-elevated'
-      }`}
-      onClick={onClick}
-      type="button"
-      title={active ? `Active: ${name}` : attached ? `Switch to ${name}` : `Attach to ${name}`}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{
-          backgroundColor: attached ? color || '#3fb950' : 'var(--color-foreground-subtle)',
-          boxShadow: attached ? `0 0 6px ${color || '#3fb950'}99` : 'none',
-        }}
-      />
-      <MiddleTruncate text={name} className="flex-1 text-xs" />
-    </button>
+    <>
+      <button
+        className={`w-full flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-[26px] border-l-2 ${
+          active
+            ? 'bg-muted border-l-accent text-foreground-strong'
+            : attached
+              ? 'text-foreground border-l-transparent hover:bg-elevated bg-elevated/40'
+              : 'text-foreground border-l-transparent hover:bg-elevated'
+        }`}
+        onClick={onClick}
+        onContextMenu={hasContextMenu ? menu.onContextMenu : undefined}
+        type="button"
+        title={active ? `Active: ${name}` : attached ? `Switch to ${name}` : `Attach to ${name}`}
+      >
+        <span
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{
+            backgroundColor: attached ? color || '#3fb950' : 'var(--color-foreground-subtle)',
+            boxShadow: attached ? `0 0 6px ${color || '#3fb950'}99` : 'none',
+          }}
+        />
+        <MiddleTruncate text={name} className="flex-1 text-xs" />
+      </button>
+      {hasContextMenu && menu.open ? (
+        <SidebarSectionMenu items={contextMenuItems} position={menu.position} innerRef={menu.ref} onClose={menu.close} />
+      ) : null}
+    </>
   )
 }

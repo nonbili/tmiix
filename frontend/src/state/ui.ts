@@ -120,7 +120,9 @@ export function setPaletteIndex(index: number) {
   ui$.palette.index.set(index)
 }
 
-export function openCommandPalette(mode: 'root' | 'theme' | 'ui-theme' = 'root') {
+export type CommandPaletteMode = 'root' | 'theme' | 'ui-theme'
+
+export function openCommandPalette(mode: CommandPaletteMode = 'root') {
   ui$.commandPalette.mode.set(mode)
   ui$.commandPalette.open.set(true)
   ui$.commandPalette.query.set('')
@@ -131,7 +133,7 @@ export function closeCommandPalette() {
   ui$.commandPalette.open.set(false)
 }
 
-export function setCommandPaletteMode(mode: 'root' | 'theme' | 'ui-theme') {
+export function setCommandPaletteMode(mode: CommandPaletteMode) {
   ui$.commandPalette.mode.set(mode)
   ui$.commandPalette.query.set('')
   ui$.commandPalette.index.set(0)

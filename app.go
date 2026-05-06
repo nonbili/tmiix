@@ -175,6 +175,16 @@ func (a *App) AttachSession(tabId, sessionName string) error {
 	return a.startTab(tabId, cmd, false, "")
 }
 
+func (a *App) KillSession(sessionName string) error {
+	sessionName = strings.TrimSpace(sessionName)
+	if sessionName == "" {
+		return errors.New("session name is required")
+	}
+	cmd := exec.Command("tmux", "kill-session", "-t", sessionName)
+	cmd.Env = termEnv()
+	return cmd.Run()
+}
+
 func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, serverName string) error {
 	a.mu.Lock()
 	if _, ok := a.tabs[tabId]; ok {
