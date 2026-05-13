@@ -156,11 +156,11 @@ export function TopBar() {
       className={`flex gap-1 bg-surface border-b border-border select-none rounded-none ${
         isMac && !fullscreen ? 'h-[34px] items-center pl-[92px] pr-2' : 'h-[34px] items-center px-2'
       }`}
-      style={{ '--wails-draggable': 'drag' } as any}
+      style={isMac ? ({ '--wails-draggable': 'drag' } as any) : undefined}
     >
       <button
-        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted hover:border-border inline-flex items-center justify-center rounded-[3px] border border-transparent shrink-0"
-        style={{ '--wails-draggable': 'no-drag' } as any}
+        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted hover:border-border inline-flex items-center justify-center rounded-[3px] border border-transparent shrink-0 transform-gpu"
+        style={isMac ? ({ '--wails-draggable': 'no-drag' } as any) : undefined}
         onClick={toggleSidebar}
         title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}
         aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
@@ -171,7 +171,7 @@ export function TopBar() {
 
       <div
         className="flex items-center gap-0.5 min-w-0 overflow-x-auto flex-1"
-        style={{ '--wails-draggable': 'drag' } as any}
+        style={isMac ? ({ '--wails-draggable': 'drag' } as any) : undefined}
       >
         <DndContext
           sensors={sensors}
@@ -193,7 +193,7 @@ export function TopBar() {
           </SortableContext>
         </DndContext>
         <button
-          className="w-6 h-[26px] inline-flex items-center justify-center rounded-[4px] text-foreground-muted hover:text-foreground-strong hover:bg-muted bg-transparent border border-transparent hover:border-border shrink-0"
+          className="w-6 h-[26px] inline-flex items-center justify-center rounded-[4px] text-foreground-muted hover:text-foreground-strong hover:bg-muted bg-transparent border border-transparent hover:border-border shrink-0 transform-gpu"
           style={{ '--wails-draggable': 'no-drag' } as any}
           onClick={() => openPalette('new')}
           title="New session (Ctrl+T)"
