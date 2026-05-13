@@ -49,6 +49,21 @@ export type PaletteItem =
   | { kind: 'shell-remote'; serverName: string; color: string | null }
   | { kind: 'connect-server'; serverName: string; color: string | null }
 
+export function paletteItemLabel(item: PaletteItem): string {
+  switch (item.kind) {
+    case 'local':
+      return item.name
+    case 'remote':
+      return item.name
+    case 'shell-local':
+      return 'Open local shell'
+    case 'shell-remote':
+      return `Open remote shell on ${item.serverName}`
+    case 'connect-server':
+      return `Connect to ${item.serverName}`
+  }
+}
+
 export function paletteItemKey(item: PaletteItem) {
   switch (item.kind) {
     case 'local':
@@ -125,16 +140,18 @@ export function getPaletteItems(): PaletteItem[] {
   if (mode !== 'new') return [...local, ...remote, ...connect]
 
   const shell: PaletteItem[] = []
-  if (sessionMatchesQuery('open local shell', query)) {
-    shell.push({ kind: 'shell-local' })
+  const localShell: PaletteItem = { kind: 'shell-local' }
+  if (sessionMatchesQuery(paletteItemLabel(localShell), query)) {
+    shell.push(localShell)
   }
   for (const server of servers) {
-    if (sessionMatchesQuery(`open shell on ${server.name}`, query)) {
-      shell.push({
-        kind: 'shell-remote',
-        serverName: server.name,
-        color: server.color || null,
-      })
+    const item: PaletteItem = {
+      kind: 'shell-remote',
+      serverName: server.name,
+      color: server.color || null,
+    }
+    if (sessionMatchesQuery(paletteItemLabel(item), query)) {
+      shell.push(item)
     }
   }
 

@@ -6,6 +6,7 @@ import {
   readStoredUIThemeId,
   writeStoredLocalColor,
 } from '../lib/storage'
+import { refreshServers } from './servers'
 
 export const ui$ = observable({
   themeId: readStoredThemeId(),
@@ -151,6 +152,7 @@ export function setCommandPaletteIndex(index: number) {
 export function openRemotePalette(connectMode = false) {
   ui$.remotePalette.open.set(true)
   ui$.remotePalette.connectMode.set(connectMode)
+  void refreshServers()
 }
 
 export function closeRemotePalette() {

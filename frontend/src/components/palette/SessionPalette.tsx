@@ -6,6 +6,7 @@ import { FooterHint } from './FooterHint'
 import {
   getPaletteItems,
   paletteItemKey,
+  paletteItemLabel,
   refreshRemoteSessions,
   refreshSessions,
   sessions$,
@@ -150,14 +151,7 @@ export function SessionPalette() {
                 : '#3fb950'
             const connectState =
               item.kind === 'connect-server' ? sidebarStates[item.serverName]?.state : undefined
-            const label =
-              item.kind === 'shell-local'
-                ? 'Open local shell'
-                : item.kind === 'shell-remote'
-                  ? `Open shell on ${item.serverName}`
-                  : item.kind === 'connect-server'
-                    ? `Connect to ${item.serverName}`
-                    : null
+            const label = paletteItemLabel(item)
             const tag = isActive
               ? 'live'
               : item.kind === 'remote'
