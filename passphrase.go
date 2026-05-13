@@ -10,9 +10,10 @@ import (
 )
 
 type passphraseRequest struct {
-	id    string
-	owner string // tabId, or empty for one-shot (e.g. ListRemoteSessions)
-	reply chan string
+	id     string
+	owner  string // tabId, or empty for one-shot (e.g. ListRemoteSessions)
+	prompt string
+	reply  chan string
 }
 
 type passphraseRegistry struct {
@@ -31,9 +32,10 @@ func (r *passphraseRegistry) request(ctx context.Context, owner, prompt string) 
 	var buf [8]byte
 	_, _ = rand.Read(buf[:])
 	req := &passphraseRequest{
-		id:    hex.EncodeToString(buf[:]),
-		owner: owner,
-		reply: make(chan string, 1),
+		id:     hex.EncodeToString(buf[:]),
+		owner:  owner,
+		prompt: prompt,
+		reply:  make(chan string, 1),
 	}
 	r.mu.Lock()
 	r.pending[req.id] = req
@@ -45,16 +47,19 @@ func (r *passphraseRegistry) request(ctx context.Context, owner, prompt string) 
 	return req.reply
 }
 
-func (r *passphraseRegistry) resolve(id, value string) {
+// resolve delivers value to the waiter and returns the original prompt (if any)
+// so callers can act on the parsed key path (e.g. push into ssh-agent).
+func (r *passphraseRegistry) resolve(id, value string) string {
 	r.mu.Lock()
 	req, ok := r.pending[id]
 	delete(r.pending, id)
 	r.mu.Unlock()
 	if !ok {
-		return
+		return ""
 	}
 	req.reply <- value
 	close(req.reply)
+	return req.prompt
 }
 
 func (r *passphraseRegistry) cancel(id string) {
@@ -86,7 +91,10 @@ func (r *passphraseRegistry) cancelFor(owner string) {
 // Bound methods called by the frontend modal.
 
 func (a *App) SubmitPassphrase(id, value string) {
-	a.passphrases.resolve(id, value)
+	prompt := a.passphrases.resolve(id, value)
+	if keyPath := parsePassphraseKeyPath(prompt); keyPath != "" {
+		go a.addKeyToAgent(keyPath, value)
+	}
 }
 
 func (a *App) CancelPassphrase(id string) {

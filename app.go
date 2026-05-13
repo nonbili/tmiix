@@ -46,6 +46,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	loadLoginShellPath()
 	installDesktopEntry()
+	ensureSSHAgent()
 }
 
 // IsTmuxAvailable reports whether `tmux` is on PATH. Used by the frontend to
@@ -132,6 +133,7 @@ func (a *App) shutdown(ctx context.Context) {
 	for _, id := range ids {
 		a.CloseTab(id)
 	}
+	shutdownSSHAgent()
 }
 
 func (a *App) ListSessions() ([]string, error) {

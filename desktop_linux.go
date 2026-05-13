@@ -39,7 +39,7 @@ func installDesktopEntry() {
 
 	desktop := fmt.Sprintf(`[Desktop Entry]
 Type=Application
-Name=tmiix
+Name=Tmiix
 Comment=Terminal multiplexer UI
 Exec=%s
 Icon=tmiix
