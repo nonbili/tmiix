@@ -19,7 +19,15 @@ import { refreshSessions } from '../../state/sessions'
 import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
 import { TERMINAL_THEMES } from '../../themes'
 import { SYSTEM_UI_THEME_ID, UI_THEMES } from '../../uiThemes'
-import { closeTab, getActiveTab, killRemoteSession, killSession } from '../../state/tabs'
+import {
+  canOpenTmuxHere,
+  closeTab,
+  getActiveTab,
+  killRemoteSession,
+  killSession,
+  openTmuxHere,
+  tabs$,
+} from '../../state/tabs'
 import { formatActionParts } from '../../lib/keybindings'
 import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
@@ -59,6 +67,10 @@ const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
       void killRemoteSession(active.serverName, active.sessionName)
     }
   },
+  'open-tmux-here': async () => {
+    closeCommandPalette()
+    await openTmuxHere()
+  },
   'toggle-sidebar': () => {
     closeCommandPalette()
     toggleSidebar()
@@ -94,6 +106,8 @@ export function CommandPalette() {
   const selectedIndex = useValue(ui$.commandPalette.index)
   const activeThemeId = useValue(ui$.themeId)
   const activeUIThemeId = useValue(ui$.uiThemeId)
+  useValue(tabs$.items)
+  useValue(tabs$.activeTabId)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const previewBaseThemeIdRef = useRef<string | null>(null)
   const previewCommittedRef = useRef(false)
@@ -146,10 +160,13 @@ export function CommandPalette() {
       }))
       source = [systemEntry, ...themeEntries]
     } else {
-      source = ROOT_COMMAND_ITEMS.map((spec) => ({
-        ...spec,
-        run: ROOT_RUNNERS[spec.id] ?? (() => closeCommandPalette()),
-      }))
+      const activeTab = getActiveTab()
+      source = ROOT_COMMAND_ITEMS.filter((spec) => spec.id !== 'open-tmux-here' || canOpenTmuxHere(activeTab)).map(
+        (spec) => ({
+          ...spec,
+          run: ROOT_RUNNERS[spec.id] ?? (() => closeCommandPalette()),
+        }),
+      )
     }
 
     return filterCommandItems(source, query)

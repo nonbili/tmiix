@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 import { useValue } from '@legendapp/state/react'
 import { Terminal, type FontWeight } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -9,7 +9,10 @@ import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../../wailsjs/r
 import { isMac, matchAction } from '../../lib/keybindings'
 import { getTheme } from '../../themes'
 import { ui$ } from '../../state/ui'
-import { updateTabLabel } from '../../state/tabs'
+import { canOpenTmuxHere, openTmuxHere, updateTabLabel } from '../../state/tabs'
+import type { Tab } from '../../types'
+import { useContextMenu } from '../../lib/useContextMenu'
+import { SidebarSectionMenu, type SectionMenuItem } from '../sidebar/SidebarSectionMenu'
 
 const XTERM_SECONDARY_DA_RESPONSE = '[>0;276;0c'
 const ENABLE_WEBGL = !isMac
@@ -131,16 +134,18 @@ async function handlePasteEvent(tabId: string, terminal: Terminal, event: Clipbo
 }
 
 interface TerminalTabProps {
+  tab: Tab
   tabId: string
   active: boolean
   themeId: string
   onClosed: () => void
 }
 
-export function TerminalTab({ tabId, active, themeId, onClosed }: TerminalTabProps) {
+export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalTabProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
+  const menu = useContextMenu()
   const onClosedRef = useRef(onClosed)
   onClosedRef.current = onClosed
   const paletteOpen = useValue(ui$.palette.open)
@@ -319,10 +324,27 @@ export function TerminalTab({ tabId, active, themeId, onClosed }: TerminalTabPro
     return () => window.clearTimeout(id)
   }, [active, tabId, overlayOpen])
 
+  const contextItems: SectionMenuItem[] = canOpenTmuxHere(tab)
+    ? [{ kind: 'button', label: 'Open tmux session here', onClick: () => void openTmuxHere(tab.id) }]
+    : []
+  const handleContextMenu = (event: ReactMouseEvent) => {
+    if (active && contextItems.length > 0) {
+      menu.onContextMenu(event)
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   return (
     <div
-      ref={hostRef}
-      className={`terminal-host absolute inset-0 overflow-hidden ${active ? '' : 'invisible pointer-events-none'}`}
-    />
+      className={`absolute inset-0 ${active ? '' : 'invisible pointer-events-none'}`}
+      onContextMenu={handleContextMenu}
+    >
+      <div ref={hostRef} className="terminal-host absolute inset-0 overflow-hidden" />
+      {active && menu.open && contextItems.length > 0 ? (
+        <SidebarSectionMenu items={contextItems} position={menu.position} innerRef={menu.ref} onClose={menu.close} />
+      ) : null}
+    </div>
   )
 }

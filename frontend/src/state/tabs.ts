@@ -7,6 +7,7 @@ import {
   KillSession,
   OpenRemoteShell,
   OpenShell,
+  WriteTab,
 } from '../../wailsjs/go/main/App'
 import type { Tab } from '../types'
 import type { StoredTab } from '../lib/storage'
@@ -14,6 +15,9 @@ import { findServer } from './servers'
 import { markRecentSession, refreshRemoteSessions, refreshSessions } from './sessions'
 import { remoteKey } from '../lib/session'
 import { ui$ } from './ui'
+
+const OPEN_TMUX_HERE_COMMAND =
+  'name=$(basename "$PWD"); name=${name:-tmux}; name=$(printf \'%s\' "$name" | tr \':.\' \'__\'); printf \'\\033]0;%s\\007\' "$name"; TMUX= tmux new-session -A -s "$name"\r'
 
 export const tabs$ = observable({
   items: [] as Tab[],
@@ -48,6 +52,20 @@ export function getActiveRemote() {
     return remoteKey(activeTab.serverName, activeTab.sessionName)
   }
   return null
+}
+
+export function canOpenTmuxHere(tab: Tab | null | undefined): tab is Tab {
+  return tab?.kind === 'shell' && !tab.tmuxStarted
+}
+
+export async function openTmuxHere(tabId?: string) {
+  const tab = tabId ? getTabs().find((item) => item.id === tabId) : getActiveTab()
+  if (!canOpenTmuxHere(tab)) return
+  tabs$.items.set((current) => current.map((item) => (item.id === tab.id ? { ...item, tmuxStarted: true } : item)))
+  await WriteTab(tab.id, OPEN_TMUX_HERE_COMMAND)
+  window.setTimeout(() => {
+    void refreshSessions()
+  }, 500)
 }
 
 export function getAttachedSessions() {

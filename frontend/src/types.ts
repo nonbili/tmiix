@@ -7,4 +7,5 @@ export interface Tab {
   sessionName: string | null
   serverName?: string | null
   color?: string | null
+  tmuxStarted?: boolean
 }

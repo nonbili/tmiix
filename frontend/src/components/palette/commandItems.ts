@@ -24,6 +24,12 @@ export const ROOT_COMMAND_ITEMS: CommandItemSpec[] = [
     shortcut: 'palette.switch',
   },
   {
+    id: 'open-tmux-here',
+    label: 'Open tmux session here',
+    detail: 'Start or attach tmux in this shell using the current directory name',
+    aliases: ['tmux', 'session', 'here', 'current directory', 'cwd', 'remote'],
+  },
+  {
     id: 'close-tab',
     label: 'Close tab',
     detail: 'Close the active tab',

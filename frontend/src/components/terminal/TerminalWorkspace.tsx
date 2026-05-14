@@ -19,6 +19,7 @@ export function TerminalWorkspace() {
         {tabs.map((tab) => (
           <TerminalTab
             key={tab.id}
+            tab={tab}
             tabId={tab.id}
             active={tab.id === activeTabId}
             themeId={themeId}

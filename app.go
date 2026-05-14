@@ -79,7 +79,26 @@ func termEnv() []string {
 	// Advertise truecolor support and program identity for modern terminal apps.
 	env = append(env, "COLORTERM=truecolor")
 	env = append(env, "TERM_PROGRAM=tmiix")
-	return env
+	return removeEnv(env, "TMUX", "TMUX_PANE")
+}
+
+func removeEnv(env []string, names ...string) []string {
+	if len(names) == 0 {
+		return env
+	}
+	blocked := map[string]bool{}
+	for _, name := range names {
+		blocked[name] = true
+	}
+	out := env[:0]
+	for _, kv := range env {
+		name, _, ok := strings.Cut(kv, "=")
+		if ok && blocked[name] {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
 }
 
 // loadLoginShellPath ensures PATH includes common macOS tool locations.
