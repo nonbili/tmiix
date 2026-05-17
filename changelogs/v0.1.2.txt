@@ -1,0 +1,6 @@
+- ssh: integrate with ssh-agent
+- tmux: support kill-session command
+- tmux: add "open tmux session here" command
+- terminal: enable tmux's own context menu
+- palette: fix auto complete in SessionPalette
+- ui: various fixes and improvements
