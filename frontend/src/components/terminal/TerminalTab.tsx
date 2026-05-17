@@ -193,6 +193,47 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
     }
     pasteTarget.addEventListener('paste', onPaste, true)
 
+    // Forward mouse drag (held motion) and release to tmux even when the
+    // mouse protocol was enabled *after* mousedown. xterm.js only attaches
+    // its document-level mousemove/mouseup listeners at mousedown time, so
+    // when an app like tmux turns on 1002/1003 in response to the right-
+    // click that opened a display-menu, motion-while-held AND the eventual
+    // release are otherwise lost (broken hover highlight; slow menu commit).
+    // xterm dedupes via its own _lastEvent, so this won't double-send.
+    const sendCoreMouse = (ev: MouseEvent, button: number, action: number) => {
+      const core = (terminal as unknown as { _core: any })._core
+      const coreMouseService = core?.coreMouseService
+      const mouseService = core?._mouseService
+      const screenElement = core?.screenElement
+      if (!coreMouseService?.areMouseEventsActive || !mouseService || !screenElement) return
+      const pos = mouseService.getMouseReportCoords(ev, screenElement)
+      if (!pos) return
+      coreMouseService.triggerMouseEvent({
+        col: pos.col,
+        row: pos.row,
+        x: pos.x,
+        y: pos.y,
+        button,
+        action,
+        ctrl: ev.ctrlKey,
+        alt: ev.altKey,
+        shift: ev.shiftKey,
+      })
+    }
+    const onDocDragMotion = (ev: MouseEvent) => {
+      if (!ev.buttons) return
+      const button = ev.buttons & 1 ? 0 /* LEFT */ : ev.buttons & 4 ? 1 /* MIDDLE */ : ev.buttons & 2 ? 2 /* RIGHT */ : 3 /* NONE */
+      if (button === 3) return
+      sendCoreMouse(ev, button, 32 /* MOVE */)
+    }
+    const onDocMouseUp = (ev: MouseEvent) => {
+      const button = ev.button < 3 ? ev.button : 3 /* NONE */
+      if (button === 3) return
+      sendCoreMouse(ev, button, 0 /* UP */)
+    }
+    document.addEventListener('mousemove', onDocDragMotion)
+    document.addEventListener('mouseup', onDocMouseUp)
+
     terminal.attachCustomKeyEventHandler((event) => {
       if (event.type !== 'keydown') return true
       if (matchAction(event) !== 'terminal.paste') return true
@@ -289,6 +330,8 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       disposed = true
       ro.disconnect()
       pasteTarget.removeEventListener('paste', onPaste, true)
+      document.removeEventListener('mousemove', onDocDragMotion)
+      document.removeEventListener('mouseup', onDocMouseUp)
       data.dispose()
       title.dispose()
       offData()
