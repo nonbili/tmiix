@@ -353,7 +353,17 @@ func (a *App) filterPassphrase(tabId string, s *ptySession, data []byte) []byte 
 		}
 		promptEnd := idx + len(passphraseTrigger) + endRel + len("': ")
 		prompt := string(s.lineBuf[idx : promptEnd-1]) // drop trailing space
-		out = append(out, s.lineBuf[:idx]...)          // pre-prompt output (usually empty)
+
+		if !isLocalPassphrasePrompt(prompt) {
+			// Prompt for a key that doesn't exist locally — it came from a
+			// program inside the remote session. Forward it untouched so it
+			// renders in the terminal where the user can answer it.
+			out = append(out, s.lineBuf[:promptEnd]...)
+			s.lineBuf = append(s.lineBuf[:0], s.lineBuf[promptEnd:]...)
+			continue
+		}
+
+		out = append(out, s.lineBuf[:idx]...) // pre-prompt output (usually empty)
 		s.lineBuf = append(s.lineBuf[:0], s.lineBuf[promptEnd:]...)
 
 		reply := a.passphrases.request(a.ctx, tabId, prompt)

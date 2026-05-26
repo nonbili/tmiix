@@ -354,6 +354,15 @@ func (a *App) runSSHPtyWriteAfterMarker(cmd *exec.Cmd, owner string, marker []by
 					}
 					promptEnd := idx + len(passphraseTrigger) + endRel + len("': ")
 					prompt := string(lineBuf[idx : promptEnd-1])
+
+					if !isLocalPassphrasePrompt(prompt) {
+						// Not a local key — leave the prompt in the captured
+						// output rather than hijacking it into the UI.
+						collected.Write(lineBuf[:promptEnd])
+						lineBuf = append(lineBuf[:0], lineBuf[promptEnd:]...)
+						continue
+					}
+
 					collected.Write(lineBuf[:idx])
 					lineBuf = append(lineBuf[:0], lineBuf[promptEnd:]...)
 

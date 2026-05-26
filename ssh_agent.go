@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -115,6 +116,30 @@ func parsePassphraseKeyPath(prompt string) string {
 		return ""
 	}
 	return rest[:j]
+}
+
+// isLocalPassphrasePrompt reports whether a captured passphrase prompt concerns
+// a key file that exists on the machine running tmiix. We only intercept prompts
+// for local keys: those are the ones our local ssh client raises while
+// connecting (and the only ones addKeyToAgent can cache via local ssh-add). A
+// prompt naming a path that does not exist locally — e.g. a "/Users/..." path
+// seen on a Linux host — was produced by a program running inside the remote
+// session and must be left in the terminal for the user to answer there.
+func isLocalPassphrasePrompt(prompt string) bool {
+	keyPath := parsePassphraseKeyPath(prompt)
+	if keyPath == "" {
+		return false
+	}
+	if strings.HasPrefix(keyPath, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			keyPath = filepath.Join(home, keyPath[2:])
+		}
+	}
+	if !filepath.IsAbs(keyPath) {
+		return false
+	}
+	_, err := os.Stat(keyPath)
+	return err == nil
 }
 
 // addKeyToAgent runs `ssh-add <keyPath>` under a pty and feeds it the
