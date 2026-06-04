@@ -40,7 +40,9 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    // While dragging, the active item must track the pointer 1:1 — any transform
+    // transition makes it float/lag behind the cursor.
+    transition: isDragging ? 'none' : transition,
     zIndex: isDragging ? 10 : undefined,
     opacity: isDragging ? 0.5 : undefined,
     pointerEvents: isDragging ? ('none' as const) : undefined,
@@ -55,7 +57,7 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
       style={style as any}
       {...attributes}
       {...listeners}
-      className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-all duration-150 ${
+      className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-colors duration-150 ${
         active
           ? 'bg-muted border-border-strong text-foreground-strong shadow-sm'
           : 'bg-transparent border-transparent text-foreground-muted hover:bg-elevated hover:text-foreground hover:border-border'
