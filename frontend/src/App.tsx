@@ -3,6 +3,7 @@ import { AppHotkeys } from './components/app/AppHotkeys'
 import { AppPersistence } from './components/app/AppPersistence'
 import { AboutDialog } from './components/dialog/AboutDialog'
 import { AskpassDialog } from './components/dialog/AskpassDialog'
+import { ConfirmDialog } from './components/dialog/ConfirmDialog'
 import { ShortcutsDialog } from './components/dialog/ShortcutsDialog'
 import { CommandPalette } from './components/palette/CommandPalette'
 import { SessionPalette } from './components/palette/SessionPalette'
@@ -27,6 +28,7 @@ function App() {
       <SessionPalette />
       <CommandPalette />
       <AskpassDialog />
+      <ConfirmDialog />
       <AboutDialog />
       <ShortcutsDialog />
       <Toaster />

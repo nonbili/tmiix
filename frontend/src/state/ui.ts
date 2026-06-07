@@ -38,7 +38,47 @@ export const ui$ = observable({
   },
   aboutOpen: false,
   shortcutsOpen: false,
+  confirm: {
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirm',
+    cancelLabel: 'Cancel',
+    destructive: false,
+  },
 })
+
+let confirmResolver: ((value: boolean) => void) | null = null
+
+export interface ConfirmOptions {
+  title?: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  destructive?: boolean
+}
+
+export function requestConfirm(options: ConfirmOptions): Promise<boolean> {
+  confirmResolver?.(false)
+  ui$.confirm.set({
+    open: true,
+    title: options.title ?? '',
+    message: options.message,
+    confirmLabel: options.confirmLabel ?? 'Confirm',
+    cancelLabel: options.cancelLabel ?? 'Cancel',
+    destructive: options.destructive ?? false,
+  })
+  return new Promise<boolean>((resolve) => {
+    confirmResolver = resolve
+  })
+}
+
+export function resolveConfirm(value: boolean) {
+  ui$.confirm.open.set(false)
+  const resolve = confirmResolver
+  confirmResolver = null
+  resolve?.(value)
+}
 
 export function toggleSidebar() {
   ui$.sidebarCollapsed.set((collapsed) => !collapsed)

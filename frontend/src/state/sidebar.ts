@@ -6,6 +6,7 @@ import { TAB_COLORS } from '../lib/session'
 import { refreshServers, servers$ } from './servers'
 import { clearRemoteSessions, refreshRemoteSessions } from './sessions'
 import { showToast } from './toasts'
+import { requestConfirm } from './ui'
 
 export type LoadState = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -71,7 +72,13 @@ export function disconnectServer(name: string) {
 }
 
 export async function removeServer(name: string) {
-  if (!window.confirm(`Remove server "${name}"?`)) return
+  const confirmed = await requestConfirm({
+    title: 'Remove server',
+    message: `Remove server "${name}"? This cannot be undone.`,
+    confirmLabel: 'Remove',
+    destructive: true,
+  })
+  if (!confirmed) return
   try {
     const server = servers$.items.get().find((candidate) => candidate.name === name)
     if (server?.color) {
