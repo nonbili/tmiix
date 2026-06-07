@@ -24,6 +24,7 @@ type SSHServer struct {
 	Port         int    `json:"port,omitempty"`
 	IdentityFile string `json:"identityFile,omitempty"`
 	Color        string `json:"color,omitempty"`
+	AutoConnect  bool   `json:"autoConnect,omitempty"`
 	// FromConfig marks entries parsed from ~/.ssh/config. For these we pass
 	// only the Host alias to ssh so that all ssh_config directives apply.
 	FromConfig bool `json:"fromConfig,omitempty"`

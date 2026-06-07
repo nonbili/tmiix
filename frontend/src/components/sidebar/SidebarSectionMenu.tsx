@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import { TAB_COLORS } from '../../lib/session'
 
 export type SectionMenuItem =
   | { kind: 'colors'; value?: string; onChange: (color: string) => void }
+  | { kind: 'toggle'; label: string; checked: boolean; onChange: (checked: boolean) => void }
   | { kind: 'button'; label: string; onClick: () => void; danger?: boolean }
 
 interface Props {
@@ -67,6 +68,27 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
                 </>
               ) : null}
             </div>
+          )
+        }
+        if (item.kind === 'toggle') {
+          return (
+            <button
+              key={i}
+              className="flex w-full items-center gap-2 text-left text-[11px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded px-2 py-1"
+              onClick={(event) => {
+                event.stopPropagation()
+                item.onChange(!item.checked)
+                onClose()
+              }}
+              role="menuitemcheckbox"
+              aria-checked={item.checked}
+              type="button"
+            >
+              <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-sm border border-border">
+                {item.checked ? <Check size={10} strokeWidth={2.2} /> : null}
+              </span>
+              <span className="flex-1">{item.label}</span>
+            </button>
           )
         }
         return (

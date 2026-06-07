@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { GetSettings, IsTmuxAvailable } from '../../../wailsjs/go/main/App'
 import { hasStoredThemeId, hasStoredUIThemeId, readStoredTabsState, storedTabKey } from '../../lib/storage'
 import { refreshServers, servers$ } from '../../state/servers'
+import { loadServerSessions } from '../../state/sidebar'
 import { refreshRemoteSessions, refreshSessions, sessions$ } from '../../state/sessions'
 import { showToast } from '../../state/toasts'
 import { setThemeId, setUIThemeId, ui$ } from '../../state/ui'
@@ -19,6 +20,7 @@ import {
 
 let restoredTabsOnce = false
 let tmuxCheckedOnce = false
+let autoConnectedOnce = false
 
 export function AppBootstrap() {
   const servers = useValue(servers$.items)
@@ -26,7 +28,14 @@ export function AppBootstrap() {
   const sidebarCollapsed = useValue(ui$.sidebarCollapsed)
 
   useEffect(() => {
-    void refreshServers()
+    void (async () => {
+      await refreshServers()
+      if (autoConnectedOnce) return
+      autoConnectedOnce = true
+      for (const server of servers$.items.peek()) {
+        if (server.autoConnect) void loadServerSessions(server.name)
+      }
+    })()
     if (!tmuxCheckedOnce) {
       tmuxCheckedOnce = true
       void IsTmuxAvailable()

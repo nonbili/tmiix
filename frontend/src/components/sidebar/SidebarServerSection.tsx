@@ -10,6 +10,7 @@ import {
   removeServer,
   sidebar$,
   toggleServer,
+  updateServerAutoConnect,
   updateServerColor,
 } from '../../state/sidebar'
 import {
@@ -65,6 +66,12 @@ export function SidebarServerSection({ server }: SidebarServerSectionProps) {
     ...(status === 'connected' || status === 'error'
       ? [{ kind: 'button' as const, label: 'Disconnect', onClick: () => disconnectServer(server.name) }]
       : []),
+    {
+      kind: 'toggle',
+      label: 'Auto Connect',
+      checked: !!server.autoConnect,
+      onChange: (checked) => void updateServerAutoConnect(server, checked),
+    },
     {
       kind: 'colors',
       value: server.color || undefined,

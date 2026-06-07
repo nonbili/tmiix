@@ -94,6 +94,15 @@ export async function updateServerColor(server: main.SSHServer, color: string) {
   }
 }
 
+export async function updateServerAutoConnect(server: main.SSHServer, autoConnect: boolean) {
+  try {
+    await AddSSHServer(main.SSHServer.createFrom({ ...server, autoConnect }))
+    await refreshServers()
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function revealServer(server: main.SSHServer) {
   const remembered = sidebar$.rememberedColors[server.name].get()
   const color = server.color || remembered || TAB_COLORS[Math.floor(Math.random() * TAB_COLORS.length)]
