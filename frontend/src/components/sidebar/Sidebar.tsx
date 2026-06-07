@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { useValue } from '@legendapp/state/react'
+import { useContextMenu } from '../../lib/useContextMenu'
 import { getKnownServers, servers$ } from '../../state/servers'
 import { addServerFromCommand, revealServer } from '../../state/sidebar'
-import { closeRemotePalette, ui$ } from '../../state/ui'
+import { closeRemotePalette, openRemotePalette, ui$ } from '../../state/ui'
 import { RemoteServerPalette } from '../palette/RemoteServerPalette'
 import { SidebarLocalHeader, SidebarLocalSessions } from './SidebarLocalSection'
+import { SidebarSectionMenu, type SectionMenuItem } from './SidebarSectionMenu'
 import { SidebarServerSection } from './SidebarServerSection'
 
 export function Sidebar() {
@@ -13,8 +15,13 @@ export function Sidebar() {
   const configHosts = useValue(servers$.configHosts)
   const remotePaletteOpen = useValue(ui$.remotePalette.open)
   const remotePaletteConnectMode = useValue(ui$.remotePalette.connectMode)
+  const menu = useContextMenu()
 
   const knownServers = useMemo(() => getKnownServers(), [configHosts, servers])
+
+  const menuItems: SectionMenuItem[] = [
+    { kind: 'button', label: 'Connect to new server', onClick: () => openRemotePalette(false) },
+  ]
 
   return (
     <>
@@ -25,7 +32,7 @@ export function Sidebar() {
       >
         <SidebarLocalHeader />
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" onContextMenu={menu.onContextMenu}>
           <SidebarLocalSessions />
 
           <div data-section="servers">
@@ -35,6 +42,15 @@ export function Sidebar() {
           </div>
         </div>
       </aside>
+
+      {menu.open ? (
+        <SidebarSectionMenu
+          items={menuItems}
+          position={menu.position}
+          innerRef={menu.ref}
+          onClose={menu.close}
+        />
+      ) : null}
 
       <RemoteServerPalette
         open={remotePaletteOpen}
