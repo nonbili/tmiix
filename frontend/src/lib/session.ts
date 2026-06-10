@@ -1,6 +1,6 @@
 export const TAB_COLORS = [
   '#3fb950', // Green
-  '#f85149', // Red
+  '#6366f1', // Indigo
   '#2f81f7', // Blue
   '#d29922', // Gold
   '#db61a2', // Pink

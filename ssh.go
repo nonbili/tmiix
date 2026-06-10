@@ -223,8 +223,14 @@ func (a *App) ListRemoteSessions(serverName string) ([]string, error) {
 	out, err := a.runSSHPty(cmd, serverName)
 	if err != nil {
 		// tmux exits non-zero if no sessions; treat that as empty.
+		// Different tmux versions phrase "no server running" differently:
+		// older builds say "no server running"/"no sessions", while newer
+		// ones fail to connect to the (absent) socket with
+		// "error connecting to <socket> (No such file or directory)".
 		msg := err.Error()
-		if strings.Contains(msg, "no server running") || strings.Contains(msg, "no sessions") {
+		if strings.Contains(msg, "no server running") ||
+			strings.Contains(msg, "no sessions") ||
+			strings.Contains(msg, "error connecting to") {
 			return []string{}, nil
 		}
 		return nil, err
