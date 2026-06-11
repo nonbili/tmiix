@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,7 +28,12 @@ type DropUploadResult struct {
 	Dir     string        `json:"dir"`
 	Copied  []string      `json:"copied"`
 	Skipped []DropSkipped `json:"skipped"`
+	// Conflicts lists files that already exist at the destination; the
+	// frontend asks for confirmation and retries them with overwrite set.
+	Conflicts []string `json:"conflicts"`
 }
+
+var errDropExists = errors.New("already exists")
 
 // PickUploadFiles opens a native file picker and returns the selected paths,
 // for uploads triggered from the UI rather than OS drag-and-drop.
@@ -62,8 +68,10 @@ func (a *App) PickUploadFiles() ([]string, error) {
 // the tab's pane: locally for plain shells and tmux sessions, or onto the
 // remote host for SSH-attached tabs. Per-file failures are reported in
 // Skipped; an error is returned only when the whole operation cannot proceed.
-func (a *App) UploadDroppedFiles(tabId, kind, sessionName string, paths []string) (*DropUploadResult, error) {
-	log.Printf("[tmiix drop] UploadDroppedFiles tab=%s kind=%s session=%q files=%d", tabId, kind, sessionName, len(paths))
+// Without overwrite, files that already exist at the destination are returned
+// in Conflicts so the frontend can confirm and retry them with overwrite set.
+func (a *App) UploadDroppedFiles(tabId, kind, sessionName string, paths []string, overwrite bool) (*DropUploadResult, error) {
+	log.Printf("[tmiix drop] UploadDroppedFiles tab=%s kind=%s session=%q files=%d overwrite=%t", tabId, kind, sessionName, len(paths), overwrite)
 	a.mu.Lock()
 	s, ok := a.tabs[tabId]
 	serverName := ""
@@ -94,7 +102,7 @@ func (a *App) UploadDroppedFiles(tabId, kind, sessionName string, paths []string
 	}
 	log.Printf("[tmiix drop] destination tab=%s server=%q dir=%s", tabId, serverName, dir)
 
-	result := &DropUploadResult{Dir: dir, Copied: []string{}, Skipped: []DropSkipped{}}
+	result := &DropUploadResult{Dir: dir, Copied: []string{}, Skipped: []DropSkipped{}, Conflicts: []string{}}
 	for _, src := range paths {
 		name := filepath.Base(src)
 		info, err := os.Stat(src)
@@ -108,8 +116,12 @@ func (a *App) UploadDroppedFiles(tabId, kind, sessionName string, paths []string
 		}
 
 		if serverName == "" {
-			if err := copyLocalFile(src, dir); err != nil {
-				result.Skipped = append(result.Skipped, DropSkipped{Name: name, Reason: err.Error()})
+			if err := copyLocalFile(src, dir, overwrite); err != nil {
+				if errors.Is(err, errDropExists) {
+					result.Conflicts = append(result.Conflicts, name)
+				} else {
+					result.Skipped = append(result.Skipped, DropSkipped{Name: name, Reason: err.Error()})
+				}
 				continue
 			}
 		} else {
@@ -123,10 +135,11 @@ func (a *App) UploadDroppedFiles(tabId, kind, sessionName string, paths []string
 				continue
 			}
 			remotePath := strings.TrimSuffix(dir, "/") + "/" + name
-			if err := a.writeRemoteFile(serverName, srv, remotePath, raw, true); err != nil {
+			if err := a.writeRemoteFile(serverName, srv, remotePath, raw, !overwrite); err != nil {
 				reason := err.Error()
-				if strings.Contains(reason, "cannot overwrite") || strings.Contains(reason, "File exists") || strings.Contains(reason, "cannot create") {
-					reason = "already exists on " + serverName
+				if !overwrite && (strings.Contains(reason, "cannot overwrite") || strings.Contains(reason, "File exists") || strings.Contains(reason, "cannot create")) {
+					result.Conflicts = append(result.Conflicts, name)
+					continue
 				}
 				result.Skipped = append(result.Skipped, DropSkipped{Name: name, Reason: reason})
 				continue
@@ -217,7 +230,7 @@ func localShellCwd(pid int) string {
 	return ""
 }
 
-func copyLocalFile(src, destDir string) error {
+func copyLocalFile(src, destDir string, overwrite bool) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("cannot read file")
@@ -225,17 +238,44 @@ func copyLocalFile(src, destDir string) error {
 	defer in.Close()
 
 	dest := filepath.Join(destDir, filepath.Base(src))
-	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-	if err != nil {
-		if os.IsExist(err) {
-			return fmt.Errorf("already exists")
+	if !overwrite {
+		out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
+			if os.IsExist(err) {
+				return errDropExists
+			}
+			return err
 		}
+		if _, err := io.Copy(out, in); err != nil {
+			_ = out.Close()
+			_ = os.Remove(dest)
+			return err
+		}
+		return out.Close()
+	}
+
+	// Overwrite via temp file + rename so a failed copy never leaves the
+	// existing destination truncated.
+	tmp, err := os.CreateTemp(destDir, ".tmiix-upload-*")
+	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(out, in); err != nil {
-		_ = out.Close()
-		_ = os.Remove(dest)
+	if _, err := io.Copy(tmp, in); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
 		return err
 	}
-	return out.Close()
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Rename(tmp.Name(), dest); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	return nil
 }

@@ -267,8 +267,15 @@ func (a *App) writeRemoteFile(serverName string, srv *SSHServer, remotePath stri
 	script := "umask 077; "
 	if noclobber {
 		script += "set -C; "
+		script += "printf %s " + shellQuote(marker) + "; base64 -d > " + shellQuotePath(remotePath)
+	} else {
+		// Overwrites stream to a temp file and mv into place so an
+		// interrupted transfer never leaves the destination truncated.
+		tmp := shellQuotePath(remotePath + ".tmiix-partial")
+		script += "printf %s " + shellQuote(marker) + "; base64 -d > " + tmp +
+			" && mv -f " + tmp + " " + shellQuotePath(remotePath) +
+			" || { rm -f " + tmp + "; exit 1; }"
 	}
-	script += "printf %s " + shellQuote(marker) + "; base64 -d > " + shellQuotePath(remotePath)
 	args := append(srv.sshArgs(false), remoteCommand("sh", "-c", script))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
