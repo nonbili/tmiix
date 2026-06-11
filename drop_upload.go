@@ -32,7 +32,30 @@ type DropUploadResult struct {
 // PickUploadFiles opens a native file picker and returns the selected paths,
 // for uploads triggered from the UI rather than OS drag-and-drop.
 func (a *App) PickUploadFiles() ([]string, error) {
-	return runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: "Upload Files"})
+	a.mu.Lock()
+	dir := a.lastUploadDir
+	a.mu.Unlock()
+	// Wails rejects a DefaultDirectory whose Lstat isn't a directory, so
+	// resolve symlinks first, and drop the path entirely if it's gone.
+	if dir != "" {
+		resolved, evalErr := filepath.EvalSymlinks(dir)
+		if evalErr != nil {
+			resolved = ""
+		} else if fi, statErr := os.Stat(resolved); statErr != nil || !fi.IsDir() {
+			resolved = ""
+		}
+		dir = resolved
+	}
+	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "Upload Files",
+		DefaultDirectory: dir,
+	})
+	if err == nil && len(paths) > 0 {
+		a.mu.Lock()
+		a.lastUploadDir = filepath.Dir(paths[0])
+		a.mu.Unlock()
+	}
+	return paths, err
 }
 
 // UploadDroppedFiles copies OS-dropped files into the working directory of

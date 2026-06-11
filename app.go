@@ -33,6 +33,9 @@ type App struct {
 	tabs        map[string]*ptySession
 	gen         uint64
 	passphrases *passphraseRegistry
+	// lastUploadDir is where the upload file picker last selected from, so
+	// repeated uploads reopen in the same place. In-memory only.
+	lastUploadDir string
 }
 
 func NewApp() *App {
