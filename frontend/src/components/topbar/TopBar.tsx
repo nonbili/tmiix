@@ -21,22 +21,65 @@ import { CSS } from '@dnd-kit/utilities'
 import { PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-react'
 import { WindowIsFullscreen } from '../../../wailsjs/runtime/runtime'
 import { isMac } from '../../lib/keybindings'
-import { closeTab, reorderTabs, setActiveTabId, tabs$ } from '../../state/tabs'
+import { useContextMenu } from '../../lib/useContextMenu'
+import { pickAndUploadFiles } from '../../lib/upload'
+import {
+  canOpenTmuxHere,
+  closeOtherTabs,
+  closeTab,
+  closeTabsToRight,
+  killRemoteSession,
+  killSession,
+  openTmuxHere,
+  reorderTabs,
+  setActiveTabId,
+  tabs$,
+} from '../../state/tabs'
 import { openPalette, toggleSidebar, ui$ } from '../../state/ui'
 import { MiddleTruncate } from '../MiddleTruncate'
+import { SidebarSectionMenu, type SectionMenuItem } from '../sidebar/SidebarSectionMenu'
 import { Tab } from '../../types'
 import { TopBarMenu } from './TopBarMenu'
 
 interface SortableTabProps {
   tab: Tab
   idx: number
+  tabCount: number
   active: boolean
   onClose: (id: string) => void
   onSelect: (id: string) => void
 }
 
-function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) {
+function tabMenuItems(tab: Tab, idx: number, tabCount: number, onClose: (id: string) => void): SectionMenuItem[] {
+  const items: SectionMenuItem[] = [{ kind: 'button', label: 'Close Tab', onClick: () => onClose(tab.id) }]
+  if (tabCount > 1) {
+    items.push({ kind: 'button', label: 'Close Other Tabs', onClick: () => closeOtherTabs(tab.id) })
+  }
+  if (idx < tabCount - 1) {
+    items.push({ kind: 'button', label: 'Close Tabs to the Right', onClick: () => closeTabsToRight(tab.id) })
+  }
+  if (canOpenTmuxHere(tab)) {
+    items.push({ kind: 'button', label: 'Open tmux Here', onClick: () => void openTmuxHere(tab.id) })
+  }
+  items.push({ kind: 'button', label: 'Upload Files…', onClick: () => void pickAndUploadFiles(tab) })
+  if (tab.kind === 'session' && tab.sessionName) {
+    const sessionName = tab.sessionName
+    items.push({ kind: 'button', label: 'Kill Session', danger: true, onClick: () => void killSession(sessionName) })
+  } else if (tab.kind === 'remote' && tab.serverName && tab.sessionName) {
+    const { serverName, sessionName } = tab
+    items.push({
+      kind: 'button',
+      label: 'Kill Session',
+      danger: true,
+      onClick: () => void killRemoteSession(serverName, sessionName),
+    })
+  }
+  return items
+}
+
+function SortableTab({ tab, idx, tabCount, active, onClose, onSelect }: SortableTabProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id })
+  const menu = useContextMenu()
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -52,46 +95,57 @@ function SortableTab({ tab, idx, active, onClose, onSelect }: SortableTabProps) 
   const hotkeyHint = idx < 9 ? ` (Alt+${idx + 1})` : ''
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style as any}
-      {...attributes}
-      {...listeners}
-      className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-colors duration-150 ${
-        active
-          ? 'bg-muted border-border-strong text-foreground-strong shadow-sm'
-          : 'bg-transparent border-transparent text-foreground-muted hover:bg-elevated hover:text-foreground hover:border-border'
-      }`}
-      onClick={() => onSelect(tab.id)}
-      title={`${tab.label}${hotkeyHint}`}
-    >
-      <span
-        className={`rounded-full shrink-0 transition-all duration-150 w-1.5 h-1.5 ${active ? '' : 'opacity-70'}`}
-        style={{
-          backgroundColor: tab.color || '#3fb950',
-          boxShadow: active ? `0 0 8px ${tab.color || '#3fb950'}80` : 'none',
-        }}
-      />
-      <MiddleTruncate text={tab.label} className="max-w-[160px]" />
-      <button
-        className={`w-4 h-4 inline-flex items-center justify-center rounded-[3px] hover:bg-border-strong hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-colors ${
-          active ? 'text-foreground-muted' : 'text-foreground-subtle'
+    <>
+      <div
+        ref={setNodeRef}
+        style={style as any}
+        {...attributes}
+        {...listeners}
+        className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-colors duration-150 ${
+          active
+            ? 'bg-muted border-border-strong text-foreground-strong shadow-sm'
+            : 'bg-transparent border-transparent text-foreground-muted hover:bg-elevated hover:text-foreground hover:border-border'
         }`}
-        style={{ '--wails-draggable': 'no-drag' } as any}
-        onClick={(e) => {
-          e.stopPropagation()
-          onClose(tab.id)
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        title="Close tab"
-        aria-label="Close tab"
-        type="button"
+        onClick={() => onSelect(tab.id)}
+        onContextMenu={menu.onContextMenu}
+        title={`${tab.label}${hotkeyHint}`}
       >
-        <span className="scale-[0.85] inline-flex">
-          <X size={10} strokeWidth={1.8} />
-        </span>
-      </button>
-    </div>
+        <span
+          className={`rounded-full shrink-0 transition-all duration-150 w-1.5 h-1.5 ${active ? '' : 'opacity-70'}`}
+          style={{
+            backgroundColor: tab.color || '#3fb950',
+            boxShadow: active ? `0 0 8px ${tab.color || '#3fb950'}80` : 'none',
+          }}
+        />
+        <MiddleTruncate text={tab.label} className="max-w-[160px]" />
+        <button
+          className={`w-4 h-4 inline-flex items-center justify-center rounded-[3px] hover:bg-border-strong hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-colors ${
+            active ? 'text-foreground-muted' : 'text-foreground-subtle'
+          }`}
+          style={{ '--wails-draggable': 'no-drag' } as any}
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose(tab.id)
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          title="Close tab"
+          aria-label="Close tab"
+          type="button"
+        >
+          <span className="scale-[0.85] inline-flex">
+            <X size={10} strokeWidth={1.8} />
+          </span>
+        </button>
+      </div>
+      {menu.open ? (
+        <SidebarSectionMenu
+          items={tabMenuItems(tab, idx, tabCount, onClose)}
+          position={menu.position}
+          innerRef={menu.ref}
+          onClose={menu.close}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -187,6 +241,7 @@ export function TopBar() {
                 key={tab.id}
                 tab={tab}
                 idx={idx}
+                tabCount={tabs.length}
                 active={tab.id === activeTabId}
                 onClose={closeTab}
                 onSelect={setActiveTabId}

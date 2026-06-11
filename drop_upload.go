@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	goruntime "runtime"
 	"strings"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // maxRemoteDropBytes caps drag-and-drop uploads to remote servers. The
@@ -25,6 +27,12 @@ type DropUploadResult struct {
 	Dir     string        `json:"dir"`
 	Copied  []string      `json:"copied"`
 	Skipped []DropSkipped `json:"skipped"`
+}
+
+// PickUploadFiles opens a native file picker and returns the selected paths,
+// for uploads triggered from the UI rather than OS drag-and-drop.
+func (a *App) PickUploadFiles() ([]string, error) {
+	return runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: "Upload Files"})
 }
 
 // UploadDroppedFiles copies OS-dropped files into the working directory of

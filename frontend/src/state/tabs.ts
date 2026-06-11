@@ -337,6 +337,17 @@ function closeTabsWhere(predicate: (tab: Tab) => boolean) {
   }
 }
 
+export function closeOtherTabs(id: string) {
+  closeTabsWhere((tab) => tab.id !== id)
+}
+
+export function closeTabsToRight(id: string) {
+  const index = getTabs().findIndex((tab) => tab.id === id)
+  if (index === -1) return
+  const rightIds = new Set(getTabs().slice(index + 1).map((tab) => tab.id))
+  closeTabsWhere((tab) => rightIds.has(tab.id))
+}
+
 export async function killSession(sessionName: string) {
   try {
     await KillSession(sessionName)
