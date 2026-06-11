@@ -255,9 +255,20 @@ func (a *App) stagePastedImage(tabId string, raw []byte, ext string) (string, er
 }
 
 func (a *App) writeRemotePastedImage(serverName string, srv *SSHServer, remotePath string, raw []byte) error {
-	log.Printf("[tmiix paste] writeRemotePastedImage start server=%s path=%s bytes=%d", serverName, remotePath, len(raw))
+	return a.writeRemoteFile(serverName, srv, remotePath, raw, false)
+}
+
+// writeRemoteFile stages raw bytes at remotePath on the server by streaming
+// base64 over an ssh pty. With noclobber set the write fails if remotePath
+// already exists.
+func (a *App) writeRemoteFile(serverName string, srv *SSHServer, remotePath string, raw []byte, noclobber bool) error {
+	log.Printf("[tmiix paste] writeRemoteFile start server=%s path=%s bytes=%d noclobber=%t", serverName, remotePath, len(raw), noclobber)
 	marker := pasteImageMarker()
-	script := "umask 077; printf %s " + shellQuote(marker) + "; base64 -d > " + shellQuote(remotePath)
+	script := "umask 077; "
+	if noclobber {
+		script += "set -C; "
+	}
+	script += "printf %s " + shellQuote(marker) + "; base64 -d > " + shellQuotePath(remotePath)
 	args := append(srv.sshArgs(false), remoteCommand("sh", "-c", script))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
@@ -265,13 +276,13 @@ func (a *App) writeRemotePastedImage(serverName string, srv *SSHServer, remotePa
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
 		if msg == "" {
-			log.Printf("[tmiix paste] writeRemotePastedImage failed without output server=%s err=%v", serverName, err)
+			log.Printf("[tmiix paste] writeRemoteFile failed without output server=%s err=%v", serverName, err)
 			return err
 		}
-		log.Printf("[tmiix paste] writeRemotePastedImage failed server=%s output=%q err=%v", serverName, msg, err)
+		log.Printf("[tmiix paste] writeRemoteFile failed server=%s output=%q err=%v", serverName, msg, err)
 		return fmt.Errorf("%s", msg)
 	}
-	log.Printf("[tmiix paste] writeRemotePastedImage complete server=%s path=%s output_bytes=%d", serverName, remotePath, len(out))
+	log.Printf("[tmiix paste] writeRemoteFile complete server=%s path=%s output_bytes=%d", serverName, remotePath, len(out))
 	return nil
 }
 
@@ -334,11 +345,19 @@ func (a *App) runSSHPtyWriteAfterMarker(cmd *exec.Cmd, owner string, marker []by
 						log.Printf("[tmiix paste] ssh pty marker seen owner=%s", owner)
 						collected.Write(lineBuf[:idx])
 						lineBuf = append(lineBuf[:0], lineBuf[idx+len(marker):]...)
-						if _, werr := ptmx.Write(input); werr != nil {
-							log.Printf("[tmiix paste] ssh pty input write failed owner=%s err=%v", owner, werr)
-							return collected.Bytes(), werr
-						}
-						log.Printf("[tmiix paste] ssh pty input written owner=%s bytes=%d", owner, len(input))
+						// Write from a goroutine: if the remote command died
+						// right after the marker (e.g. noclobber refused the
+						// redirect), nothing drains the pty and an inline
+						// write of a large payload would block forever. The
+						// read loop keeps collecting the error output and the
+						// deferred ptmx.Close unblocks the writer.
+						go func() {
+							if _, werr := ptmx.Write(input); werr != nil {
+								log.Printf("[tmiix paste] ssh pty input write failed owner=%s err=%v", owner, werr)
+								return
+							}
+							log.Printf("[tmiix paste] ssh pty input written owner=%s bytes=%d", owner, len(input))
+						}()
 						sentInput = true
 						continue
 					}

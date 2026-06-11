@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"fmt"
@@ -51,6 +52,14 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 0x0d, G: 0x11, B: 0x17, A: 1},
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop: true,
+			// DisableWebViewDrop must stay false: on Linux it calls
+			// gtk_drag_dest_unset on the webview, which stops GTK from
+			// delivering drag-drop signals at all. The wails JS runtime
+			// already preventDefault()s file drops to block navigation.
+			DisableWebViewDrop: false,
+		},
 		Linux:            platformLinuxOptions(),
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHidden(),
@@ -60,8 +69,11 @@ func main() {
 				Message: "The missing tmux GUI",
 			},
 		},
-		OnStartup:  app.startup,
-		OnDomReady: runtime.WindowShow,
+		OnStartup: app.startup,
+		OnDomReady: func(ctx context.Context) {
+			runtime.WindowShow(ctx)
+			installNavigationGuard()
+		},
 		OnShutdown: app.shutdown,
 		Bind: []interface{}{
 			app,

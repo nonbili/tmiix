@@ -1,4 +1,5 @@
 import { AppBootstrap } from './components/app/AppBootstrap'
+import { AppFileDrop } from './components/app/AppFileDrop'
 import { AppHotkeys } from './components/app/AppHotkeys'
 import { AppPersistence } from './components/app/AppPersistence'
 import { AboutDialog } from './components/dialog/AboutDialog'
@@ -17,6 +18,7 @@ function App() {
     <div className="grid grid-rows-[auto_1fr] h-screen bg-background">
       <AppBootstrap />
       <AppPersistence />
+      <AppFileDrop />
       <AppHotkeys />
       <TopBar />
 

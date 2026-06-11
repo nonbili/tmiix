@@ -46,6 +46,11 @@ body {
   background: transparent;
 }
 
+/* Mark the terminal as a Wails native file-drop target (see AppFileDrop). */
+.terminal-host {
+  --wails-drop-target: drop;
+}
+
 .terminal-host .xterm {
   height: 100%;
   width: 100%;

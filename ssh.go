@@ -190,6 +190,15 @@ func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
 }
 
+// shellQuotePath quotes a remote path for use in a shell script, leaving a
+// leading ~/ unquoted so the remote shell still expands it to $HOME.
+func shellQuotePath(p string) string {
+	if rest, ok := strings.CutPrefix(p, "~/"); ok {
+		return "~/" + shellQuote(rest)
+	}
+	return shellQuote(p)
+}
+
 func remoteCommand(args ...string) string {
 	quoted := make([]string, 0, len(args))
 	for _, arg := range args {
