@@ -31,6 +31,7 @@ import {
 import { formatActionParts } from '../../lib/keybindings'
 import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
+import { pickAndUploadFiles } from '../../lib/upload'
 import { ROOT_COMMAND_ITEMS, filterCommandItems, type CommandItemSpec } from './commandItems'
 import { FooterHint } from './FooterHint'
 
@@ -70,6 +71,11 @@ const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
   'open-tmux-here': async () => {
     closeCommandPalette()
     await openTmuxHere()
+  },
+  'upload-files': () => {
+    const active = getActiveTab()
+    closeCommandPalette()
+    if (active) void pickAndUploadFiles(active)
   },
   'toggle-sidebar': () => {
     closeCommandPalette()

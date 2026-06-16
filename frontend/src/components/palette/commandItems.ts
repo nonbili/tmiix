@@ -37,6 +37,12 @@ export const ROOT_COMMAND_ITEMS: CommandItemSpec[] = [
     shortcut: 'tab.close',
   },
   {
+    id: 'upload-files',
+    label: 'Upload Files…',
+    detail: 'Pick files to upload to the active tab',
+    aliases: ['upload', 'files', 'send', 'transfer', 'scp'],
+  },
+  {
     id: 'kill-session',
     label: 'Kill session',
     detail: "Terminate the active tab's tmux session",
