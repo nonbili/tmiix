@@ -276,7 +276,7 @@ func (a *App) writeRemoteFile(serverName string, srv *SSHServer, remotePath stri
 			" && mv -f " + tmp + " " + shellQuotePath(remotePath) +
 			" || { rm -f " + tmp + "; exit 1; }"
 	}
-	args := append(srv.sshArgs(false), remoteCommand("sh", "-c", script))
+	args := append(srv.sshArgs(false, true), remoteCommand("sh", "-c", script))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
 	out, err := a.runSSHPtyWriteAfterMarker(cmd, serverName, []byte(marker), base64TerminalInput(raw))

@@ -52,7 +52,7 @@ export function SessionPalette() {
     }, 0)
     void refreshSessions().catch(() => {})
     for (const name of Object.keys(sessions$.remote.peek())) {
-      void refreshRemoteSessions(name).catch(() => {})
+      void refreshRemoteSessions(name, { prompt: false }).catch(() => {})
     }
   }, [open])
 

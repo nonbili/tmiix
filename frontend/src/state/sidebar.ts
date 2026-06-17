@@ -37,16 +37,24 @@ function deleteServer(name: string) {
   sidebar$.servers.set(next)
 }
 
-export async function loadServerSessions(name: string) {
-  const previousState = sidebar$.servers[name].get()?.state
-  patchServer(name, { state: 'loading', expanded: true })
+export async function loadServerSessions(name: string, options: { prompt?: boolean; silent?: boolean } = {}) {
+  const previous = sidebar$.servers[name].get()
+  const previousState = previous?.state
+  patchServer(name, { state: 'loading', expanded: options.silent ? (previous?.expanded ?? false) : true })
   try {
-    await refreshRemoteSessions(name)
+    await refreshRemoteSessions(name, { prompt: options.prompt })
     sidebar$.servers[name].set({ state: 'loaded', expanded: true })
-    if (previousState !== 'loaded') {
+    if (!options.silent && previousState !== 'loaded') {
       showToast('success', `Connected to ${name}`)
     }
   } catch (e) {
+    if (options.silent) {
+      // A quiet boot probe (BatchMode) couldn't authenticate without
+      // prompting. Leave the server idle rather than surfacing an error —
+      // the user can connect manually, which prompts for a passphrase.
+      sidebar$.servers[name].set({ state: 'idle', expanded: previous?.expanded ?? false })
+      return
+    }
     const message = (e as Error)?.message ?? String(e)
     sidebar$.servers[name].set({ state: 'error', error: message, expanded: true })
     showToast('error', `Failed to connect to ${name}: ${message}`)

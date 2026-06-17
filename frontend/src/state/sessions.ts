@@ -1,5 +1,5 @@
 import { observable } from '@legendapp/state'
-import { ListRemoteSessions, ListSessions } from '../../wailsjs/go/main/App'
+import { ListRemoteSessions, ListRemoteSessionsQuiet, ListSessions } from '../../wailsjs/go/main/App'
 import { sessionMatchesQuery } from '../lib/search'
 import { readStoredRecentSessions, updateRecentSessions } from '../lib/storage'
 import { servers$ } from './servers'
@@ -19,8 +19,9 @@ export async function refreshSessions() {
   }
 }
 
-export async function refreshRemoteSessions(serverName: string) {
-  const list = await ListRemoteSessions(serverName)
+export async function refreshRemoteSessions(serverName: string, options: { prompt?: boolean } = {}) {
+  const list =
+    options.prompt === false ? await ListRemoteSessionsQuiet(serverName) : await ListRemoteSessions(serverName)
   sessions$.remote.set((current) => ({ ...current, [serverName]: list }))
   return list
 }

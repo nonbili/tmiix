@@ -185,7 +185,7 @@ func (a *App) resolveDropCwd(sessionName, serverName string, srv *SSHServer, pid
 	}
 
 	if sessionName != "" {
-		args := append(srv.sshArgs(false), remoteCommand("tmux", "display-message", "-p", "-t", "="+sessionName+":", "#{pane_current_path}"))
+		args := append(srv.sshArgs(false, true), remoteCommand("tmux", "display-message", "-p", "-t", "="+sessionName+":", "#{pane_current_path}"))
 		cmd := shellWrappedSSH(args)
 		cmd.Env = termEnv()
 		out, err := a.runSSHPty(cmd, serverName)

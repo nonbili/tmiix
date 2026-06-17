@@ -150,8 +150,10 @@ func (a *App) findServer(name string) (*SSHServer, error) {
 }
 
 // sshArgs builds the argument list for ssh, excluding the final remote command.
-// If interactive is true, includes -tt to force pty allocation.
-func (s *SSHServer) sshArgs(interactive bool) []string {
+// If interactive is true, includes -tt to force pty allocation. If
+// promptPassphrase is false for a non-interactive command, OpenSSH batch mode is
+// enabled so passive probes cannot raise tmiix's askpass dialog.
+func (s *SSHServer) sshArgs(interactive, promptPassphrase bool) []string {
 	args := []string{}
 	if interactive {
 		args = append(args, "-tt")
@@ -159,6 +161,9 @@ func (s *SSHServer) sshArgs(interactive bool) []string {
 		// Limit to pubkey so the only interactive prompt we might hit is a
 		// passphrase for a locked key — which we intercept via the pty.
 		args = append(args, "-o", "PreferredAuthentications=publickey")
+		if !promptPassphrase {
+			args = append(args, "-o", "BatchMode=yes")
+		}
 	}
 	args = append(args, "-o", "ServerAliveInterval=30")
 	// Try to forward our program identity and color support.
@@ -222,11 +227,19 @@ func shellWrappedSSH(args []string) *exec.Cmd {
 }
 
 func (a *App) ListRemoteSessions(serverName string) ([]string, error) {
+	return a.listRemoteSessions(serverName, true)
+}
+
+func (a *App) ListRemoteSessionsQuiet(serverName string) ([]string, error) {
+	return a.listRemoteSessions(serverName, false)
+}
+
+func (a *App) listRemoteSessions(serverName string, promptPassphrase bool) ([]string, error) {
 	s, err := a.findServer(serverName)
 	if err != nil {
 		return nil, err
 	}
-	args := append(s.sshArgs(false), remoteCommand("tmux", "list-sessions", "-F", "#{session_name}"))
+	args := append(s.sshArgs(false, promptPassphrase), remoteCommand("tmux", "list-sessions", "-F", "#{session_name}"))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
 	out, err := a.runSSHPty(cmd, serverName)
@@ -256,7 +269,7 @@ func (a *App) AttachRemoteSession(tabId, serverName, sessionName string) error {
 	if err != nil {
 		return err
 	}
-	args := append(s.sshArgs(true), remoteCommand("tmux", "-u", "-T", tmuxClientFeatures, "attach-session", "-t", sessionName))
+	args := append(s.sshArgs(true, true), remoteCommand("tmux", "-u", "-T", tmuxClientFeatures, "attach-session", "-t", sessionName))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
 	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName)
@@ -271,7 +284,7 @@ func (a *App) KillRemoteSession(serverName, sessionName string) error {
 	if err != nil {
 		return err
 	}
-	args := append(s.sshArgs(false), remoteCommand("tmux", "kill-session", "-t", sessionName))
+	args := append(s.sshArgs(false, true), remoteCommand("tmux", "kill-session", "-t", sessionName))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
 	_, err = a.runSSHPty(cmd, serverName)
@@ -283,7 +296,7 @@ func (a *App) OpenRemoteShell(tabId, serverName string) error {
 	if err != nil {
 		return err
 	}
-	args := s.sshArgs(true)
+	args := s.sshArgs(true, true)
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
 	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName)

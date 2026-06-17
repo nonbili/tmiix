@@ -33,7 +33,7 @@ export function AppBootstrap() {
       if (autoConnectedOnce) return
       autoConnectedOnce = true
       for (const server of servers$.items.peek()) {
-        if (server.autoConnect) void loadServerSessions(server.name)
+        if (server.autoConnect) void loadServerSessions(server.name, { prompt: false, silent: true })
       }
     })()
     if (!tmuxCheckedOnce) {
@@ -89,7 +89,7 @@ export function AppBootstrap() {
       await Promise.all(
         remoteServerNames.map(async (serverName) => {
           try {
-            const list = await refreshRemoteSessions(serverName)
+            const list = await refreshRemoteSessions(serverName, { prompt: false })
             remoteSessions.set(serverName, new Set(list))
           } catch {
             /* ignore unavailable remotes during restore */
@@ -124,7 +124,7 @@ export function AppBootstrap() {
     const pollRemotes = () => {
       const connected = Object.keys(sessions$.remote.peek())
       for (const name of connected) {
-        void refreshRemoteSessions(name).catch(() => {
+        void refreshRemoteSessions(name, { prompt: false }).catch(() => {
           /* ignore transient poll failures */
         })
       }
