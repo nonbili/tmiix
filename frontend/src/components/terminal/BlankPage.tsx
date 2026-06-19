@@ -36,25 +36,25 @@ const HELP_ITEMS: { action: KeybindingAction; label: string; icon: React.ReactNo
 
 export function BlankPage() {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden bg-background">
+    <div className="absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden bg-background px-6 max-[560px]:px-4">
       {/* Background Subtle Logo */}
       <div className="absolute -bottom-16 -right-16 opacity-[0.02] rotate-12 scale-150 pointer-events-none select-none">
         <div className="text-[40rem] font-mono font-bold leading-none">t</div>
       </div>
 
-      <div className="flex flex-col items-center">
-        <div className="text-8xl font-mono font-bold flex items-baseline gap-[0.05em] pointer-events-none">
+      <div className="flex flex-col items-center max-w-full">
+        <div className="text-8xl font-mono font-bold flex items-baseline gap-[0.05em] pointer-events-none max-[560px]:text-6xl">
           <span className="text-foreground drop-shadow-[0_0_15px_rgba(201,209,217,0.2)] tracking-tighter">tm</span>
           <span className="font-sans text-term-green drop-shadow-[0_0_15px_rgba(63,185,80,0.3)]">i</span>
           <span className="font-sans text-term-green drop-shadow-[0_0_15px_rgba(63,185,80,0.3)]">i</span>
           <span className="text-foreground drop-shadow-[0_0_15px_rgba(201,209,217,0.2)]">x</span>
         </div>
 
-        <div className="mt-4 text-foreground-subtle text-[11px] font-bold uppercase tracking-[0.4em] translate-x-[0.2em] pointer-events-none">
+        <div className="mt-4 text-foreground-subtle text-[11px] font-bold uppercase tracking-[0.4em] translate-x-[0.2em] pointer-events-none max-[560px]:text-[10px] max-[560px]:tracking-[0.28em]">
           Tmux Multiplexer
         </div>
 
-        <div className="mt-16 w-full min-w-[320px] space-y-6">
+        <div className="mt-16 w-full min-w-[320px] max-w-[420px] space-y-6 max-[560px]:mt-10 max-[560px]:min-w-0">
           <div className="flex items-center gap-4 pointer-events-none">
             <div className="h-px flex-1 bg-border/40"></div>
             <div className="text-[10px] font-bold text-foreground-subtle uppercase tracking-[0.2em]">Quick Start</div>
@@ -68,16 +68,16 @@ export function BlankPage() {
                 <button
                   key={action}
                   onClick={run}
-                  className="flex items-center justify-between group px-4 py-2 rounded-xl transition-all hover:bg-surface active:scale-[0.98] cursor-pointer border border-transparent hover:border-border/30"
+                  className="flex items-center justify-between gap-4 group px-4 py-2 rounded-[8px] transition-all hover:bg-surface active:scale-[0.98] cursor-pointer border border-transparent hover:border-border/30 max-[560px]:px-3"
                 >
                   <div className="flex items-center gap-3 text-foreground-muted group-hover:text-foreground transition-colors">
                     <span className="opacity-40 group-hover:opacity-100 transition-opacity">{icon}</span>
-                    <span className="text-[13px]">{label}</span>
+                    <span className="text-[13px] truncate">{label}</span>
                   </div>
                   {chordParts ? (
                     <KbdShortcut
                       parts={chordParts}
-                      className="px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted text-[11px] font-medium min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors"
+                      className="shrink-0 px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted text-[11px] font-medium min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors max-[560px]:hidden"
                     />
                   ) : null}
                 </button>

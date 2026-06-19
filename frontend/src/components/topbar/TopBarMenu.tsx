@@ -16,12 +16,12 @@ interface MenuItemProps {
 function MenuItem({ icon, label, onClick }: MenuItemProps) {
   return (
     <button
-      className="w-full flex items-center gap-2.5 text-left text-[12px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-[4px] px-2.5 py-1.5 transition-colors group"
+      className="w-full flex items-center gap-2.5 text-left text-[12px] leading-5 normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-[4px] px-2.5 py-1.5 transition-colors group whitespace-nowrap"
       onClick={onClick}
       type="button"
     >
-      <span className="text-foreground-subtle group-hover:text-foreground">{icon}</span>
-      {label}
+      <span className="text-foreground-subtle group-hover:text-foreground shrink-0">{icon}</span>
+      <span>{label}</span>
     </button>
   )
 }
@@ -64,7 +64,7 @@ export function TopBarMenu() {
         onClick={() => setOpen((v) => !v)}
       />
       {open ? (
-        <div className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[200px] rounded-[6px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] animate-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[216px] rounded-[6px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] animate-in slide-in-from-top-2 duration-150">
           <MenuItem
             icon={<Palette size={13} strokeWidth={1.7} />}
             label="Terminal theme"
@@ -89,7 +89,7 @@ export function TopBarMenu() {
               openRemotePalette(false)
             }}
           />
-          <div className="my-1 border-t border-border/50" />
+          <div className="mx-1 my-1 border-t border-border/60" />
           <MenuItem
             icon={<Keyboard size={13} strokeWidth={1.7} />}
             label="Keyboard shortcuts"
@@ -130,7 +130,7 @@ export function TopBarMenu() {
               openAbout()
             }}
           />
-          <div className="my-1 border-t border-border/50" />
+          <div className="mx-1 my-1 border-t border-border/60" />
           <MenuItem
             icon={<Power size={13} strokeWidth={1.7} />}
             label="Quit"
