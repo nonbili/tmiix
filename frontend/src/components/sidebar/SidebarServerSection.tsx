@@ -131,13 +131,15 @@ export function SidebarServerSection({ server }: SidebarServerSectionProps) {
       ) : null}
 
       {expanded ? (
-        <div className="py-1">
+        <div className="py-1.5">
           {state?.state === 'error' ? (
-            <div className="px-5 pb-2 text-term-red text-[11px] leading-[1.5] break-words">
+            <div className="mx-2 mb-2 rounded-[6px] border border-term-red/30 bg-term-red/10 px-3 py-2 text-term-red text-[11px] leading-[1.5] break-words">
               {state.error ?? 'connection failed'}
             </div>
           ) : state?.state === 'loaded' && srvSessions.length === 0 ? (
-            <div className="px-5 py-1 text-foreground-subtle text-[11px]">No sessions.</div>
+            <div className="mx-2 my-1 rounded-[6px] border border-border/70 bg-background/35 px-3 py-2 text-foreground-subtle text-[11px]">
+              No sessions.
+            </div>
           ) : (
             srvSessions.map((name) => {
               const key = remoteKey(server.name, name)

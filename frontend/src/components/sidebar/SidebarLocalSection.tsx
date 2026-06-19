@@ -64,10 +64,10 @@ export function SidebarLocalSessions() {
   if (!localExpanded) return null
 
   return (
-    <div className="py-1">
+    <div className="py-1.5">
       {sessions.length === 0 ? (
-        <div className="px-3 py-4 text-foreground-subtle text-xs leading-[1.6]">
-          <div>No tmux sessions detected.</div>
+        <div className="mx-2 my-2 rounded-[6px] border border-border/70 bg-background/35 px-3 py-3 text-foreground-subtle text-xs leading-[1.6]">
+          <div className="text-foreground-muted">No tmux sessions detected.</div>
           <div className="mt-2">
             Start one with{' '}
             <code className="text-foreground bg-elevated border border-border rounded-[3px] px-1 py-px text-[11px]">

@@ -15,14 +15,14 @@ import { TopBar } from './components/topbar/TopBar'
 
 function App() {
   return (
-    <div className="grid grid-rows-[auto_1fr] h-screen bg-background">
+    <div className="grid grid-rows-[auto_1fr] h-screen bg-background text-foreground antialiased app-shell">
       <AppBootstrap />
       <AppPersistence />
       <AppFileDrop />
       <AppHotkeys />
       <TopBar />
 
-      <div className="grid grid-cols-[auto_1fr] min-h-0">
+      <div className="grid grid-cols-[auto_1fr] min-h-0 overflow-hidden">
         <Sidebar />
         <TerminalWorkspace />
       </div>

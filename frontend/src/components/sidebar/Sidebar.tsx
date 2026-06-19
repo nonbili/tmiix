@@ -26,8 +26,8 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`flex flex-col bg-surface border-r border-border min-w-0 overflow-hidden transition-[opacity,border-color] duration-[120ms] ease-in-out ${
-          collapsed ? 'opacity-0 pointer-events-none border-r-transparent w-0' : 'w-[260px]'
+        className={`flex flex-col bg-surface/96 border-r border-border/90 min-w-0 overflow-hidden shadow-[1px_0_0_rgba(255,255,255,0.025)] transition-[opacity,border-color] duration-[120ms] ease-in-out ${
+          collapsed ? 'opacity-0 pointer-events-none border-r-transparent w-0' : 'w-[260px] max-[720px]:w-[220px] max-[480px]:w-[180px]'
         }`}
       >
         <SidebarLocalHeader />

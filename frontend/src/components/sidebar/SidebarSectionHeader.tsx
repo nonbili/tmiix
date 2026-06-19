@@ -38,12 +38,12 @@ export function SidebarSectionHeader({
 }: SidebarSectionHeaderProps) {
   return (
     <div
-      className={`relative flex items-center justify-between h-7 pl-3 pr-2 border-b border-border text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-surface group border-l-2 border-l-transparent ${
+      className={`relative flex items-center justify-between h-8 pl-3 pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-surface/80 group border-l-2 border-l-transparent transition-colors hover:bg-elevated/45 ${
         borderedTop ? 'border-t mt-[-1px]' : ''
       }`}
     >
       <button
-        className="relative flex-1 flex items-center bg-transparent border-0 cursor-pointer text-left min-w-0 uppercase tracking-[0.08em] hover:text-foreground"
+        className="relative flex-1 flex items-center bg-transparent border-0 cursor-pointer text-left min-w-0 uppercase tracking-[0.08em] hover:text-foreground transition-colors"
         onClick={onToggle}
         onContextMenu={onContextMenu}
         type="button"
@@ -70,7 +70,7 @@ export function SidebarSectionHeader({
         </span>
         <MiddleTruncate text={title} className="mr-1.5" style={{ color: color || undefined }} />
         {typeof count === 'number' ? (
-          <span className="text-foreground-muted bg-elevated border border-border rounded-[10px] px-1.5 text-[10px] leading-4 tracking-normal normal-case mr-auto">
+          <span className="text-foreground-muted bg-background/60 border border-border/80 rounded-[10px] px-1.5 text-[10px] leading-4 tracking-normal normal-case mr-auto">
             {count}
           </span>
         ) : (

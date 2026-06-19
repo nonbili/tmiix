@@ -20,7 +20,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
   return (
     <div
       ref={innerRef}
-      className="fixed z-50 flex min-w-[120px] flex-col gap-1.5 rounded-md border border-border bg-elevated p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
+      className="fixed z-50 flex min-w-[144px] flex-col gap-1 rounded-[6px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur"
       style={{ left: position.x, top: position.y }}
     >
       {items.map((item, i) => {
@@ -33,7 +33,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
               onMouseLeave={() => setColorMenuOpen(false)}
             >
               <button
-                className="flex w-full items-center gap-2 text-left text-[11px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded px-2 py-1"
+                className="flex w-full items-center gap-2 text-left text-[12px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-[4px] px-2 py-1.5"
                 onClick={(event) => {
                   event.stopPropagation()
                   setColorMenuOpen((open) => !open)
@@ -60,7 +60,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
                 <>
                   <div className="absolute left-full top-0 h-full w-2" />
                   <div
-                    className="absolute left-[calc(100%+6px)] top-[-2px] z-10 rounded-md border border-border bg-elevated p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
+                    className="absolute left-[calc(100%+6px)] top-[-2px] z-10 rounded-[6px] border border-border/90 bg-elevated p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
                     role="menu"
                   >
                     <ColorGrid value={item.value} onChange={item.onChange} onClose={onClose} />
@@ -74,7 +74,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
           return (
             <button
               key={i}
-              className="flex w-full items-center gap-2 text-left text-[11px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded px-2 py-1"
+              className="flex w-full items-center gap-2 text-left text-[12px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-[4px] px-2 py-1.5"
               onClick={(event) => {
                 event.stopPropagation()
                 item.onChange(!item.checked)
@@ -94,7 +94,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
         return (
           <button
             key={i}
-            className={`text-left text-[11px] normal-case tracking-normal bg-transparent border-0 cursor-pointer rounded px-2 py-1 ${
+            className={`text-left text-[12px] normal-case tracking-normal bg-transparent border-0 cursor-pointer rounded-[4px] px-2 py-1.5 ${
               item.danger
                 ? 'text-term-red hover:bg-term-red/10'
                 : 'text-foreground hover:text-foreground-strong hover:bg-muted'

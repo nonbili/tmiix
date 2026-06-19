@@ -83,7 +83,7 @@ export function AskpassDialog() {
   return (
     <div className="fixed top-3 left-0 right-0 grid place-items-center z-30 pointer-events-none">
       <div
-        className="pointer-events-auto w-[min(480px,calc(100vw-32px))] bg-surface border border-border rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.45)] overflow-hidden"
+        className="pointer-events-auto w-[min(480px,calc(100vw-32px))] bg-surface border border-border/90 rounded-[8px] shadow-[0_12px_40px_rgba(0,0,0,0.40)] overflow-hidden"
         role="dialog"
         aria-modal="true"
       >
@@ -137,7 +137,7 @@ export function AskpassDialog() {
               {askpass.error ? (
                 <span className="text-term-red">{askpass.error}</span>
               ) : (
-                'enter to submit · esc to cancel'
+                'SSH authentication'
               )}
             </span>
           </div>

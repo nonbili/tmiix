@@ -12,7 +12,7 @@ export function TerminalWorkspace() {
   return (
     <main className="flex flex-col bg-background min-w-0 overflow-hidden flex-1">
       <div
-        className="relative flex-1 min-h-0 transition-colors duration-[120ms] ease-in-out"
+        className="relative flex-1 min-h-0 overflow-hidden transition-colors duration-[120ms] ease-in-out"
         style={{ background: 'var(--terminal-bg)' }}
       >
         {tabs.length === 0 && <BlankPage />}

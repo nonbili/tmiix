@@ -64,7 +64,6 @@ export function BlankPage() {
           <div className="grid grid-cols-1 gap-1">
             {HELP_ITEMS.map(({ action, label, icon, run }) => {
               const chordParts = formatActionParts(action)
-              if (!chordParts) return null
               return (
                 <button
                   key={action}
@@ -75,10 +74,12 @@ export function BlankPage() {
                     <span className="opacity-40 group-hover:opacity-100 transition-opacity">{icon}</span>
                     <span className="text-[13px]">{label}</span>
                   </div>
-                  <KbdShortcut
-                    parts={chordParts}
-                    className="px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted text-[11px] font-medium min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors"
-                  />
+                  {chordParts ? (
+                    <KbdShortcut
+                      parts={chordParts}
+                      className="px-1.5 py-0.5 rounded border border-border bg-elevated text-foreground-muted text-[11px] font-medium min-w-[3.5rem] text-center shadow-sm group-hover:text-foreground transition-colors"
+                    />
+                  ) : null}
                 </button>
               )
             })}

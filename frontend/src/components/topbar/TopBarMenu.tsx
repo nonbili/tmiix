@@ -16,7 +16,7 @@ interface MenuItemProps {
 function MenuItem({ icon, label, onClick }: MenuItemProps) {
   return (
     <button
-      className="w-full flex items-center gap-2.5 text-left text-[12px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-md px-2.5 py-1.5 transition-colors group"
+      className="w-full flex items-center gap-2.5 text-left text-[12px] normal-case tracking-normal text-foreground hover:text-foreground-strong hover:bg-muted bg-transparent border-0 cursor-pointer rounded-[4px] px-2.5 py-1.5 transition-colors group"
       onClick={onClick}
       type="button"
     >
@@ -60,11 +60,11 @@ export function TopBarMenu() {
         title="App menu"
         aria-label="App menu"
         aria-expanded={open}
-        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted border border-transparent hover:border-border rounded-[3px]"
+        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted border border-transparent hover:border-border rounded-[4px]"
         onClick={() => setOpen((v) => !v)}
       />
       {open ? (
-        <div className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[200px] rounded-lg border border-border bg-elevated p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)] animate-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[200px] rounded-[6px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] animate-in slide-in-from-top-2 duration-150">
           <MenuItem
             icon={<Palette size={13} strokeWidth={1.7} />}
             label="Terminal theme"

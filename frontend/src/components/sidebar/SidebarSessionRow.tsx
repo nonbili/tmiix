@@ -18,12 +18,12 @@ export function SidebarSessionRow({ name, active, attached, color, onClick, cont
   return (
     <>
       <button
-        className={`w-full flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-[26px] border-l-2 ${
+        className={`w-full flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-7 border-l-2 transition-[background,color,border-color] ${
           active
-            ? 'bg-muted border-l-accent text-foreground-strong'
+            ? 'bg-accent-soft border-l-accent text-foreground-strong'
             : attached
-              ? 'text-foreground border-l-transparent hover:bg-elevated bg-elevated/40'
-              : 'text-foreground border-l-transparent hover:bg-elevated'
+              ? 'text-foreground border-l-transparent hover:bg-elevated bg-elevated/35'
+              : 'text-foreground-muted border-l-transparent hover:bg-elevated/70 hover:text-foreground'
         }`}
         onClick={onClick}
         onContextMenu={hasContextMenu ? menu.onContextMenu : undefined}
@@ -37,7 +37,7 @@ export function SidebarSessionRow({ name, active, attached, color, onClick, cont
             boxShadow: attached ? `0 0 6px ${color || '#3fb950'}99` : 'none',
           }}
         />
-        <MiddleTruncate text={name} className="flex-1 text-xs" />
+        <MiddleTruncate text={name} className="flex-1 text-xs leading-none" />
       </button>
       {hasContextMenu && menu.open ? (
         <SidebarSectionMenu items={contextMenuItems} position={menu.position} innerRef={menu.ref} onClose={menu.close} />

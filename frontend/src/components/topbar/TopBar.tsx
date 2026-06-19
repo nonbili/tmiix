@@ -101,10 +101,10 @@ function SortableTab({ tab, idx, tabCount, active, onClose, onSelect }: Sortable
         style={style as any}
         {...attributes}
         {...listeners}
-        className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[4px] border cursor-move text-xs shrink-0 transition-colors duration-150 ${
+        className={`group flex items-center gap-1.5 h-[26px] pl-2.5 pr-1 rounded-[5px] border cursor-move text-xs shrink-0 transition-[background,border-color,color,box-shadow] duration-150 ${
           active
-            ? 'bg-muted border-border-strong text-foreground-strong shadow-sm'
-            : 'bg-transparent border-transparent text-foreground-muted hover:bg-elevated hover:text-foreground hover:border-border'
+            ? 'bg-elevated border-border-strong text-foreground-strong shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_14px_rgba(0,0,0,0.18)]'
+            : 'bg-transparent border-transparent text-foreground-muted hover:bg-elevated/70 hover:text-foreground hover:border-border'
         }`}
         onClick={() => onSelect(tab.id)}
         onContextMenu={menu.onContextMenu}
@@ -119,7 +119,7 @@ function SortableTab({ tab, idx, tabCount, active, onClose, onSelect }: Sortable
         />
         <MiddleTruncate text={tab.label} className="max-w-[160px]" />
         <button
-          className={`w-4 h-4 inline-flex items-center justify-center rounded-[3px] hover:bg-border-strong hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-colors ${
+          className={`w-4 h-4 inline-flex items-center justify-center rounded-[3px] hover:bg-border-strong/80 hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-colors ${
             active ? 'text-foreground-muted' : 'text-foreground-subtle'
           }`}
           style={{ '--wails-draggable': 'no-drag' } as any}
@@ -209,13 +209,13 @@ export function TopBar() {
 
   return (
     <header
-      className={`flex gap-1 bg-surface border-b border-border select-none rounded-none ${
-        isMac && !fullscreen ? 'h-[34px] items-center pl-[92px] pr-2' : 'h-[34px] items-center px-2'
+      className={`flex gap-1 bg-surface/95 border-b border-border/90 select-none rounded-none shadow-[0_1px_0_rgba(255,255,255,0.03)] ${
+        isMac && !fullscreen ? 'h-9 items-center pl-[92px] pr-2' : 'h-9 items-center px-2'
       }`}
       style={isMac ? ({ '--wails-draggable': 'drag' } as any) : undefined}
     >
       <button
-        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted hover:border-border inline-flex items-center justify-center rounded-[3px] border border-transparent shrink-0 transform-gpu"
+        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-muted hover:border-border inline-flex items-center justify-center rounded-[4px] border border-transparent shrink-0 transform-gpu transition-colors"
         style={isMac ? ({ '--wails-draggable': 'no-drag' } as any) : undefined}
         onClick={toggleSidebar}
         title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}
@@ -250,7 +250,7 @@ export function TopBar() {
           </SortableContext>
         </DndContext>
         <button
-          className="w-6 h-[26px] inline-flex items-center justify-center rounded-[4px] text-foreground-muted hover:text-foreground-strong hover:bg-muted bg-transparent border border-transparent hover:border-border shrink-0 transform-gpu"
+          className="w-6 h-[26px] inline-flex items-center justify-center rounded-[5px] text-foreground-muted hover:text-foreground-strong hover:bg-elevated bg-transparent border border-transparent hover:border-border shrink-0 transform-gpu transition-colors"
           style={{ '--wails-draggable': 'no-drag' } as any}
           onClick={() => openPalette('new')}
           title="New session (Ctrl+T)"

@@ -103,7 +103,7 @@ export function RemoteServerPalette({
       onClose={onClose}
       ariaLabel="Remote projects"
       overlayClassName="fixed inset-0 grid place-items-start justify-center pt-18 max-[720px]:pt-7 bg-overlay backdrop-blur-md z-20"
-      panelClassName="w-[min(640px,calc(100vw-32px))] bg-surface border border-border shadow-[0_18px_60px_rgba(0,0,0,0.30)] rounded-xl overflow-hidden"
+      panelClassName="w-[min(640px,calc(100vw-32px))] bg-surface border border-border/90 shadow-[0_18px_60px_rgba(0,0,0,0.34)] rounded-[8px] overflow-hidden"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.preventDefault()
@@ -137,7 +137,7 @@ export function RemoteServerPalette({
         <div className="px-4 pt-3 pb-2 border-b border-border">
           <div className="text-[10px] uppercase tracking-[0.1em] text-foreground-subtle mb-1.5">{title}</div>
           <div className="flex items-center gap-3">
-            <span className="w-6 h-6 inline-flex items-center justify-center rounded-md bg-accent-soft text-accent text-xs shrink-0">
+            <span className="w-6 h-6 inline-flex items-center justify-center rounded-[5px] bg-accent-soft text-accent text-xs shrink-0">
               {connectMode ? '+' : '□'}
             </span>
             {connectMode ? (
@@ -172,9 +172,7 @@ export function RemoteServerPalette({
       body={
         connectMode ? (
           <div className="p-2 max-h-[min(50vh,420px)] overflow-auto">
-            <div className="px-3 py-2 text-foreground-subtle text-xs leading-[1.6]">
-              Enter the command you use to SSH into this server.
-            </div>
+            <div className="px-3 py-2 text-foreground-subtle text-xs leading-[1.6]">SSH command</div>
           </div>
         ) : (
           <PaletteList
@@ -199,7 +197,7 @@ export function RemoteServerPalette({
             renderItem={(item, { selected }) =>
               item.kind === 'connect' ? (
                 <div
-                  className={`w-full flex items-center gap-2.5 border-0 cursor-pointer px-3 py-2.5 rounded-lg text-left ${
+                  className={`w-full flex items-center gap-2.5 border-0 cursor-pointer px-3 py-2.5 rounded-[6px] text-left ${
                     selected
                       ? 'bg-accent-soft text-foreground-strong'
                       : 'bg-transparent text-foreground hover:bg-accent-soft hover:text-foreground-strong'
@@ -216,7 +214,7 @@ export function RemoteServerPalette({
                 </div>
               ) : (
                 <div
-                  className={`w-full flex items-center gap-2.5 border-0 cursor-pointer px-3 py-2.5 rounded-lg text-left ${
+                  className={`w-full flex items-center gap-2.5 border-0 cursor-pointer px-3 py-2.5 rounded-[6px] text-left ${
                     selected
                       ? 'bg-accent-soft text-foreground-strong'
                       : 'bg-transparent text-foreground hover:bg-accent-soft hover:text-foreground-strong'

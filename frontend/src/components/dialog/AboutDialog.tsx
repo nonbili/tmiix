@@ -32,13 +32,13 @@ export function AboutDialog() {
   return (
     <div className="fixed inset-0 grid place-items-center z-50 bg-overlay backdrop-blur-sm px-4">
       <div
-        className="relative w-full max-w-[400px] bg-surface border border-border rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200"
+        className="relative w-full max-w-[400px] bg-surface border border-border/90 rounded-[8px] shadow-[0_20px_50px_rgba(0,0,0,0.42)] overflow-hidden animate-in fade-in zoom-in duration-200"
         role="dialog"
         aria-modal="true"
       >
         <button
           onClick={closeAbout}
-          className="absolute top-3 right-3 p-1.5 text-foreground-subtle hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          className="absolute top-3 right-3 p-1.5 text-foreground-subtle hover:text-foreground hover:bg-muted rounded-[5px] transition-colors"
           aria-label="Close"
         >
           <X size={14} strokeWidth={1.8} />
@@ -51,12 +51,11 @@ export function AboutDialog() {
 
           <h2 className="text-xl font-bold text-foreground-strong mb-1">Tmiix</h2>
           <p className="text-xs text-foreground-subtle mb-2">{appInfo?.version ?? 'v0.1.0'}</p>
-          <p className="text-sm text-foreground-subtle mb-6">A modern tmux session manager</p>
 
           <div className="w-full space-y-3">
             <button
               onClick={() => BrowserOpenURL('https://github.com/nonbili/tmiix')}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-elevated hover:bg-muted border border-border rounded-lg text-sm text-foreground hover:text-foreground-strong transition-all group"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-elevated hover:bg-muted border border-border rounded-[6px] text-sm text-foreground hover:text-foreground-strong transition-all group"
             >
               GitHub Repository
               <span className="text-foreground-subtle group-hover:text-foreground transition-colors">

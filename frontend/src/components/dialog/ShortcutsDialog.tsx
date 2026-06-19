@@ -71,14 +71,14 @@ export function ShortcutsDialog() {
   return (
     <div className="fixed inset-0 grid place-items-center z-50 bg-overlay backdrop-blur-sm px-4">
       <div
-        className="relative w-full max-w-[520px] max-h-[80vh] overflow-auto bg-surface border border-border rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in duration-200"
+        className="relative w-full max-w-[520px] max-h-[80vh] overflow-auto bg-surface border border-border/90 rounded-[8px] shadow-[0_20px_50px_rgba(0,0,0,0.42)] animate-in fade-in zoom-in duration-200"
         role="dialog"
         aria-modal="true"
         aria-label="Keyboard shortcuts"
       >
         <button
           onClick={closeShortcuts}
-          className="absolute top-3 right-3 p-1.5 text-foreground-subtle hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          className="absolute top-3 right-3 p-1.5 text-foreground-subtle hover:text-foreground hover:bg-muted rounded-[5px] transition-colors"
           aria-label="Close"
         >
           <X size={14} strokeWidth={1.8} />
@@ -86,9 +86,6 @@ export function ShortcutsDialog() {
 
         <div className="px-6 pt-6 pb-2">
           <h2 className="text-base font-semibold text-foreground-strong">Keyboard shortcuts</h2>
-          <p className="text-xs text-foreground-subtle mt-1">
-            Customize bindings in <span className="font-mono">~/.config/tmiix/settings.toml</span>.
-          </p>
         </div>
 
         <div className="px-6 pb-6 space-y-4">
@@ -97,7 +94,7 @@ export function ShortcutsDialog() {
               <h3 className="text-[11px] uppercase tracking-[0.08em] text-foreground-subtle mb-1.5">
                 {group.title}
               </h3>
-              <div className="rounded-lg border border-border divide-y divide-border/60">
+              <div className="rounded-[6px] border border-border divide-y divide-border/60">
                 {group.items.map((item) => (
                   <div
                     key={item.action}
