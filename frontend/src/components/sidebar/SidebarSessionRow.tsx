@@ -18,18 +18,21 @@ export function SidebarSessionRow({ name, active, attached, color, onClick, cont
   return (
     <>
       <button
-        className={`w-full flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-7 border-l-2 transition-[background,color,border-color] ${
+        className={`relative w-[calc(100%-12px)] mx-1.5 flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-7 rounded-[6px] transition-[background,color] ${
           active
-            ? 'bg-accent-soft border-l-accent text-foreground-strong'
+            ? 'bg-accent-soft text-foreground-strong'
             : attached
-              ? 'text-foreground border-l-transparent hover:bg-elevated bg-elevated/35'
-              : 'text-foreground-muted border-l-transparent hover:bg-elevated/70 hover:text-foreground'
+              ? 'text-foreground bg-elevated/35 hover:bg-elevated'
+              : 'text-foreground-muted hover:bg-elevated/60 hover:text-foreground'
         }`}
         onClick={onClick}
         onContextMenu={hasContextMenu ? menu.onContextMenu : undefined}
         type="button"
         title={active ? `Active: ${name}` : attached ? `Switch to ${name}` : `Attach to ${name}`}
       >
+        {active ? (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-[3px] rounded-r-full bg-accent" />
+        ) : null}
         <span
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
           style={{

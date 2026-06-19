@@ -38,7 +38,7 @@ export function SidebarSectionHeader({
 }: SidebarSectionHeaderProps) {
   return (
     <div
-      className={`relative flex items-center justify-between h-8 pl-3 pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-surface/80 group border-l-2 border-l-transparent transition-colors hover:bg-elevated/45 ${
+      className={`relative flex items-center justify-between h-8 pl-[18px] pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-elevated/40 group transition-colors hover:bg-elevated/60 ${
         borderedTop ? 'border-t mt-[-1px]' : ''
       }`}
     >
@@ -70,7 +70,7 @@ export function SidebarSectionHeader({
         </span>
         <MiddleTruncate text={title} className="mr-1.5" style={{ color: color || undefined }} />
         {typeof count === 'number' ? (
-          <span className="text-foreground-muted bg-background/60 border border-border/80 rounded-[10px] px-1.5 text-[10px] leading-4 tracking-normal normal-case mr-auto">
+          <span className="text-foreground-muted bg-elevated/80 border border-border/60 rounded-full px-1.5 min-w-[18px] text-center text-[10px] leading-4 tracking-normal normal-case mr-auto">
             {count}
           </span>
         ) : (
