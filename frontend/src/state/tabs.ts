@@ -9,7 +9,7 @@ import {
   OpenShell,
   WriteTab,
 } from '../../wailsjs/go/main/App'
-import type { Tab } from '../types'
+import type { Tab, TabStatus } from '../types'
 import type { StoredTab } from '../lib/storage'
 import { findServer } from './servers'
 import { markRecentSession, refreshRemoteSessions, refreshSessions } from './sessions'
@@ -298,6 +298,7 @@ export async function attachRemote(serverName: string, sessionName: string) {
 }
 
 export function closeTab(id: string) {
+  cancelReconnect(id)
   const activeTabId = tabs$.activeTabId.peek()
   tabs$.items.set((current) => {
     const index = current.findIndex((tab) => tab.id === id)
@@ -322,6 +323,7 @@ function closeTabsWhere(predicate: (tab: Tab) => boolean) {
   if (idsToClose.length === 0) return
 
   const closeSet = new Set(idsToClose)
+  for (const id of idsToClose) cancelReconnect(id)
   tabs$.items.set((current) => {
     const activeIndex = current.findIndex((tab) => tab.id === activeTabId)
     const nextTabs = current.filter((tab) => !closeSet.has(tab.id))
@@ -374,7 +376,97 @@ export async function killRemoteSession(serverName: string, sessionName: string)
   }
 }
 
-export function handleTabClosedFromBackend(id: string) {
+// --- Remote tab auto-reconnect ----------------------------------------------
+//
+// When an ssh-backed tab's process exits unexpectedly (the connection dropped,
+// e.g. after the machine suspends/resumes) we transparently re-attach instead
+// of removing the tab. Attaching to a remote tmux session resumes the live
+// session with no work lost. After a bounded number of rapid failures we give
+// up and mark the tab disconnected so the user can retry manually.
+
+const MAX_RECONNECT_ATTEMPTS = 5
+// A connection that stayed up at least this long before dropping earns a fresh
+// retry budget — distinguishing a one-off blip from a server that's truly gone.
+const STABLE_CONNECTION_MS = 20_000
+
+type ReconnectInfo = { attempts: number; timer?: number; connectedAt?: number }
+const reconnects = new Map<string, ReconnectInfo>()
+
+function reconnectBackoffMs(attempt: number) {
+  return Math.min(1000 * 2 ** (attempt - 1), 10_000)
+}
+
+function isReconnectable(tab: Tab): boolean {
+  return Boolean(tab.serverName) && (tab.kind === 'remote' || tab.kind === 'shell')
+}
+
+function setTabStatus(id: string, status: TabStatus | undefined, attempt?: number) {
+  tabs$.items.set((current) =>
+    current.map((tab) => (tab.id === id ? { ...tab, status, reconnectAttempt: attempt } : tab)),
+  )
+}
+
+function cancelReconnect(id: string) {
+  const info = reconnects.get(id)
+  if (info?.timer) window.clearTimeout(info.timer)
+  reconnects.delete(id)
+}
+
+async function reattachTab(tab: Tab) {
+  if (tab.kind === 'remote' && tab.serverName && tab.sessionName) {
+    await AttachRemoteSession(tab.id, tab.serverName, tab.sessionName)
+  } else if (tab.kind === 'shell' && tab.serverName) {
+    await OpenRemoteShell(tab.id, tab.serverName)
+  } else {
+    throw new Error('tab is not reconnectable')
+  }
+}
+
+function attemptReconnect(tab: Tab) {
+  if (!getTabs().some((item) => item.id === tab.id)) {
+    reconnects.delete(tab.id)
+    return
+  }
+  reattachTab(tab)
+    .then(() => {
+      if (!getTabs().some((item) => item.id === tab.id)) {
+        // Tab was closed mid-reconnect — tear down the session we just opened.
+        void CloseTab(tab.id).catch(() => {})
+        reconnects.delete(tab.id)
+        return
+      }
+      const info = reconnects.get(tab.id)
+      if (info) info.connectedAt = Date.now()
+      setTabStatus(tab.id, 'connected')
+    })
+    .catch(() => scheduleReconnect(tab))
+}
+
+function scheduleReconnect(tab: Tab) {
+  const info = reconnects.get(tab.id) ?? { attempts: 0 }
+  if (info.attempts >= MAX_RECONNECT_ATTEMPTS) {
+    reconnects.set(tab.id, info)
+    setTabStatus(tab.id, 'disconnected')
+    return
+  }
+  info.attempts += 1
+  reconnects.set(tab.id, info)
+  setTabStatus(tab.id, 'reconnecting', info.attempts)
+  info.timer = window.setTimeout(() => attemptReconnect(tab), reconnectBackoffMs(info.attempts))
+}
+
+// reconnectTab is the manual retry entry point (from the disconnected overlay).
+// It resets the retry budget and attempts immediately.
+export function reconnectTab(id: string) {
+  const tab = getTabs().find((item) => item.id === id)
+  if (!tab || !isReconnectable(tab)) return
+  cancelReconnect(id)
+  reconnects.set(id, { attempts: 1 })
+  setTabStatus(id, 'reconnecting', 1)
+  attemptReconnect(tab)
+}
+
+function removeTabFromList(id: string) {
   tabs$.items.set((current) => {
     const index = current.findIndex((tab) => tab.id === id)
     if (index === -1) return current
@@ -386,6 +478,29 @@ export function handleTabClosedFromBackend(id: string) {
     }
     return nextTabs
   })
+}
+
+export function handleTabClosedFromBackend(id: string, clean = true) {
+  const tab = getTabs().find((item) => item.id === id)
+  if (!tab) {
+    cancelReconnect(id)
+    return
+  }
+
+  // An unexpected drop on a remote tab → try to bring it back.
+  if (!clean && isReconnectable(tab)) {
+    const info = reconnects.get(id)
+    if (info?.connectedAt && Date.now() - info.connectedAt > STABLE_CONNECTION_MS) {
+      // Was stable for a while; start a fresh retry budget.
+      cancelReconnect(id)
+    }
+    scheduleReconnect(tab)
+    return
+  }
+
+  // Clean exit, or a non-reconnectable (local) tab → remove it.
+  cancelReconnect(id)
+  removeTabFromList(id)
 }
 
 export function syncLocalTabColors() {

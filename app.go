@@ -301,12 +301,26 @@ func (a *App) readTab(tabId string, s *ptySession) {
 
 	a.mu.Lock()
 	current, ok := a.tabs[tabId]
-	if ok && current.gen == s.gen {
+	mine := ok && current.gen == s.gen
+	if mine {
 		delete(a.tabs, tabId)
 	}
 	a.mu.Unlock()
 	a.passphrases.cancelFor(tabId)
-	runtime.EventsEmit(a.ctx, "terminal:closed:"+tabId)
+
+	// Distinguish a clean end (user typed `exit`, detached tmux, killed the
+	// session) from a failure — most importantly an ssh connection that
+	// dropped, as happens when the machine suspends/resumes. The frontend uses
+	// this to decide whether to auto-reconnect remote tabs. We only reap here
+	// when we still own the session; a concurrent CloseTab (a user-initiated
+	// close) reaps it itself and is always treated as clean.
+	clean := true
+	if mine {
+		if werr := s.cmd.Wait(); werr != nil {
+			clean = false
+		}
+	}
+	runtime.EventsEmit(a.ctx, "terminal:closed:"+tabId, clean)
 }
 
 // filterPassphrase scans pty output for ssh passphrase prompts. When it finds

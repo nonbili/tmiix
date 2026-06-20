@@ -110,13 +110,25 @@ function SortableTab({ tab, idx, tabCount, active, onClose, onSelect }: Sortable
         onContextMenu={menu.onContextMenu}
         title={`${tab.label}${hotkeyHint}`}
       >
-        <span
-          className={`rounded-full shrink-0 transition-all duration-150 w-1.5 h-1.5 ${active ? '' : 'opacity-70 group-hover:opacity-100'}`}
-          style={{
-            backgroundColor: tab.color || '#3fb950',
-            boxShadow: active ? `0 0 8px ${tab.color || '#3fb950'}80` : 'none',
-          }}
-        />
+        {(() => {
+          const dotColor =
+            tab.status === 'disconnected'
+              ? '#f85149'
+              : tab.status === 'reconnecting'
+                ? '#d29922'
+                : tab.color || '#3fb950'
+          return (
+            <span
+              className={`rounded-full shrink-0 transition-all duration-150 w-1.5 h-1.5 ${
+                tab.status === 'reconnecting' ? 'animate-pulse' : ''
+              } ${active ? '' : 'opacity-70 group-hover:opacity-100'}`}
+              style={{
+                backgroundColor: dotColor,
+                boxShadow: active ? `0 0 8px ${dotColor}80` : 'none',
+              }}
+            />
+          )
+        })()}
         <MiddleTruncate text={tab.label} className="max-w-[160px]" />
         <button
           className={`w-4 h-4 inline-flex items-center justify-center rounded-[4px] hover:bg-border-strong/70 hover:text-foreground-strong bg-transparent border-0 p-0 ml-0.5 transition-[background,color,opacity] ${

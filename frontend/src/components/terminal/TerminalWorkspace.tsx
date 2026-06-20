@@ -23,7 +23,7 @@ export function TerminalWorkspace() {
             tabId={tab.id}
             active={tab.id === activeTabId}
             themeId={themeId}
-            onClosed={() => handleTabClosedFromBackend(tab.id)}
+            onClosed={(clean) => handleTabClosedFromBackend(tab.id, clean)}
           />
         ))}
       </div>

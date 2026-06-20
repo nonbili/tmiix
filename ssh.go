@@ -165,7 +165,9 @@ func (s *SSHServer) sshArgs(interactive, promptPassphrase bool) []string {
 			args = append(args, "-o", "BatchMode=yes")
 		}
 	}
-	args = append(args, "-o", "ServerAliveInterval=30")
+	// Detect dropped connections (e.g. after suspend/resume) in ~30s so the UI
+	// can auto-reconnect promptly: 3 missed 10s probes.
+	args = append(args, "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=3")
 	// Try to forward our program identity and color support.
 	args = append(args, "-o", "SendEnv=COLORTERM TERM_PROGRAM")
 
