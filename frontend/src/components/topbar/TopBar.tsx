@@ -212,12 +212,12 @@ export function TopBar() {
   return (
     <header
       className={`flex gap-1 bg-surface/95 border-b border-border select-none rounded-none ${
-        isMac && !fullscreen ? 'h-9 items-center pl-[92px] pr-2' : 'h-9 items-center px-2'
+        isMac && !fullscreen ? 'h-9 items-center pl-[92px] pr-1' : 'h-9 items-center px-1'
       }`}
       style={isMac ? ({ '--wails-draggable': 'drag' } as any) : undefined}
     >
       <button
-        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-elevated hover:border-border inline-flex items-center justify-center rounded-[6px] border border-transparent shrink-0 transform-gpu transition-colors"
+        className="w-7 h-7 text-foreground-muted hover:text-foreground-strong hover:bg-elevated hover:border-border inline-flex items-center justify-center rounded-[6px] border border-transparent shrink-0 transform-gpu transition-colors"
         style={isMac ? ({ '--wails-draggable': 'no-drag' } as any) : undefined}
         onClick={toggleSidebar}
         title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}
@@ -252,7 +252,7 @@ export function TopBar() {
           </SortableContext>
         </DndContext>
         <button
-          className="w-6 h-[28px] inline-flex items-center justify-center rounded-[6px] text-foreground-muted hover:text-foreground-strong hover:bg-elevated bg-transparent border border-transparent hover:border-border shrink-0 transform-gpu transition-colors"
+          className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-foreground-muted hover:text-foreground-strong hover:bg-elevated bg-transparent border border-transparent hover:border-border shrink-0 transform-gpu transition-colors"
           style={{ '--wails-draggable': 'no-drag' } as any}
           onClick={() => openPalette('new')}
           title="New session (Ctrl+T)"

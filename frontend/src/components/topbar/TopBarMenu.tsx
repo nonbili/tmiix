@@ -60,7 +60,8 @@ export function TopBarMenu() {
         title="App menu"
         aria-label="App menu"
         aria-expanded={open}
-        className="w-6 h-6 text-foreground-muted hover:text-foreground-strong hover:bg-elevated border border-transparent hover:border-border rounded-[6px]"
+        size={28}
+        className="text-foreground-muted hover:text-foreground-strong hover:bg-elevated border border-transparent hover:border-border rounded-[6px]"
         onClick={() => setOpen((v) => !v)}
       />
       {open ? (

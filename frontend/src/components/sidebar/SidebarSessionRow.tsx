@@ -18,7 +18,7 @@ export function SidebarSessionRow({ name, active, attached, color, onClick, cont
   return (
     <>
       <button
-        className={`relative w-[calc(100%-12px)] mx-1.5 flex items-center gap-2 border-0 bg-transparent cursor-pointer px-3 py-1 text-left h-7 rounded-[6px] transition-[background,color] ${
+        className={`relative w-[calc(100%-12px)] mx-1.5 flex items-center gap-2 border-0 bg-transparent cursor-pointer px-2 py-1 text-left h-7 rounded-[6px] transition-[background,color] ${
           active
             ? 'bg-accent-soft text-foreground-strong'
             : attached
@@ -31,7 +31,7 @@ export function SidebarSessionRow({ name, active, attached, color, onClick, cont
         title={active ? `Active: ${name}` : attached ? `Switch to ${name}` : `Attach to ${name}`}
       >
         {active ? (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-[3px] rounded-r-full bg-accent" />
+          <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-3.5 w-[3px] rounded-r-full bg-accent" />
         ) : null}
         <span
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"

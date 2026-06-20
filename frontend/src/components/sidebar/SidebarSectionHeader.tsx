@@ -38,7 +38,7 @@ export function SidebarSectionHeader({
 }: SidebarSectionHeaderProps) {
   return (
     <div
-      className={`relative flex items-center justify-between h-8 pl-[18px] pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-elevated/40 group transition-colors hover:bg-elevated/60 ${
+      className={`relative flex items-center justify-between h-8 pl-[14px] pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-elevated/40 group transition-colors hover:bg-elevated/60 ${
         borderedTop ? 'border-t mt-[-1px]' : ''
       }`}
     >

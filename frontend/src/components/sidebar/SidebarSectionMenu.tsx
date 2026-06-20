@@ -129,7 +129,7 @@ function ColorGrid({
         <button
           key={option}
           className={`w-4 h-4 rounded-full border cursor-pointer transition-transform hover:scale-110 ${
-            option === value ? 'border-fg-0' : 'border-border'
+            option === value ? 'border-foreground-strong ring-2 ring-foreground-strong/40' : 'border-border'
           }`}
           style={{ backgroundColor: option }}
           onClick={(event) => {
@@ -143,7 +143,7 @@ function ColorGrid({
       ))}
       <button
         className={`w-4 h-4 rounded-full border cursor-pointer transition-transform hover:scale-110 flex items-center justify-center text-[12px] leading-none ${
-          !value ? 'border-fg-0' : 'border-border'
+          !value ? 'border-foreground-strong ring-2 ring-foreground-strong/40' : 'border-border'
         }`}
         style={{ backgroundColor: 'transparent' }}
         onClick={(event) => {
