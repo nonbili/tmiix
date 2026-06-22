@@ -1,6 +1,6 @@
 import { observable } from '@legendapp/state'
 import { ListRemoteSessions, ListRemoteSessionsQuiet, ListSessions } from '../../wailsjs/go/main/App'
-import { sessionMatchesQuery } from '../lib/search'
+import { sessionMatchesQuery, sessionMatchRank } from '../lib/search'
 import { readStoredRecentSessions, updateRecentSessions } from '../lib/storage'
 import { servers$ } from './servers'
 import { ui$ } from './ui'
@@ -80,34 +80,50 @@ export function paletteItemKey(item: PaletteItem) {
   }
 }
 
+function paletteItemSortLabel(item: PaletteItem): string {
+  switch (item.kind) {
+    case 'local':
+      return item.name
+    case 'remote':
+      return `${item.serverName}:${item.name}`
+    case 'shell-local':
+      return paletteItemLabel(item)
+    case 'shell-remote':
+      return paletteItemLabel(item)
+    case 'connect-server':
+      return paletteItemLabel(item)
+  }
+}
+
+function sessionItemRank(item: Extract<PaletteItem, { kind: 'local' | 'remote' }>, query: string): number {
+  if (item.kind === 'local') return sessionMatchRank(item.name, query) ?? Number.MAX_SAFE_INTEGER
+  return Math.min(
+    sessionMatchRank(item.name, query) ?? Number.MAX_SAFE_INTEGER,
+    sessionMatchRank(`${item.serverName}:${item.name}`, query) ?? Number.MAX_SAFE_INTEGER,
+  )
+}
+
+function sessionKindPriority(item: Extract<PaletteItem, { kind: 'local' | 'remote' }>): number {
+  return item.kind === 'local' ? 0 : 1
+}
+
 export function getPaletteItems(): PaletteItem[] {
   const query = ui$.palette.query.peek()
   const mode = ui$.palette.mode.peek()
   const recent = sessions$.recent.peek()
 
-  const local = sessions$.items
+  const sessionItems: Extract<PaletteItem, { kind: 'local' | 'remote' }>[] = sessions$.items
     .peek()
     .filter((name) => sessionMatchesQuery(name, query))
-    .sort((left, right) => {
-      const leftRecent = recent.indexOf(left)
-      const rightRecent = recent.indexOf(right)
-      if (leftRecent !== -1 || rightRecent !== -1) {
-        if (leftRecent === -1) return 1
-        if (rightRecent === -1) return -1
-        return leftRecent - rightRecent
-      }
-      return left.localeCompare(right)
-    })
-    .map<PaletteItem>((name) => ({ kind: 'local', name }))
+    .map((name) => ({ kind: 'local', name }))
 
   const remoteMap = sessions$.remote.peek()
   const servers = servers$.items.peek()
-  const remote: PaletteItem[] = []
   for (const server of servers) {
     const list = remoteMap[server.name] ?? []
     for (const name of list) {
       if (sessionMatchesQuery(name, query) || sessionMatchesQuery(`${server.name}:${name}`, query)) {
-        remote.push({
+        sessionItems.push({
           kind: 'remote',
           serverName: server.name,
           name,
@@ -116,10 +132,23 @@ export function getPaletteItems(): PaletteItem[] {
       }
     }
   }
-  remote.sort((left, right) => {
-    if (left.kind !== 'remote' || right.kind !== 'remote') return 0
-    const byServer = left.serverName.localeCompare(right.serverName)
-    return byServer !== 0 ? byServer : left.name.localeCompare(right.name)
+
+  sessionItems.sort((left, right) => {
+    const byRank = sessionItemRank(left, query) - sessionItemRank(right, query)
+    if (byRank !== 0) return byRank
+
+    const leftRecent = left.kind === 'local' ? recent.indexOf(left.name) : -1
+    const rightRecent = right.kind === 'local' ? recent.indexOf(right.name) : -1
+    if (leftRecent !== -1 || rightRecent !== -1) {
+      if (leftRecent === -1) return 1
+      if (rightRecent === -1) return -1
+      return leftRecent - rightRecent
+    }
+
+    const byKind = sessionKindPriority(left) - sessionKindPriority(right)
+    if (byKind !== 0) return byKind
+
+    return paletteItemSortLabel(left).localeCompare(paletteItemSortLabel(right))
   })
 
   const connect: PaletteItem[] = []
@@ -138,7 +167,7 @@ export function getPaletteItems(): PaletteItem[] {
     return left.serverName.localeCompare(right.serverName)
   })
 
-  if (mode !== 'new') return [...local, ...remote, ...connect]
+  if (mode !== 'new') return [...sessionItems, ...connect]
 
   const shell: PaletteItem[] = []
   const localShell: PaletteItem = { kind: 'shell-local' }
@@ -156,5 +185,5 @@ export function getPaletteItems(): PaletteItem[] {
     }
   }
 
-  return [...local, ...remote, ...connect, ...shell]
+  return [...sessionItems, ...connect, ...shell]
 }
