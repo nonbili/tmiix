@@ -461,7 +461,7 @@ export function reconnectTab(id: string) {
   const tab = getTabs().find((item) => item.id === id)
   if (!tab || !isReconnectable(tab)) return
   cancelReconnect(id)
-  reconnects.set(id, { attempts: 1 })
+  reconnects.set(id, { attempts: 0 })
   setTabStatus(id, 'reconnecting', 1)
   attemptReconnect(tab)
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -211,10 +210,23 @@ func (a *App) KillSession(sessionName string) error {
 
 func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, serverName string) error {
 	a.mu.Lock()
-	if _, ok := a.tabs[tabId]; ok {
-		a.mu.Unlock()
-		return fmt.Errorf("tab %q already open", tabId)
+	old := a.tabs[tabId]
+	if old != nil {
+		delete(a.tabs, tabId)
 	}
+	a.mu.Unlock()
+	if old != nil {
+		a.passphrases.cancelFor(tabId)
+		if old.ptmx != nil {
+			_ = old.ptmx.Close()
+		}
+		if old.cmd != nil && old.cmd.Process != nil {
+			_ = old.cmd.Process.Kill()
+			_, _ = old.cmd.Process.Wait()
+		}
+	}
+
+	a.mu.Lock()
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		a.mu.Unlock()
@@ -306,6 +318,9 @@ func (a *App) readTab(tabId string, s *ptySession) {
 		delete(a.tabs, tabId)
 	}
 	a.mu.Unlock()
+	if !mine {
+		return
+	}
 	a.passphrases.cancelFor(tabId)
 
 	// Distinguish a clean end (user typed `exit`, detached tmux, killed the
