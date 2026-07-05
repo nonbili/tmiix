@@ -1,0 +1,4 @@
+- ssh: support auto-connect, reconnect on resume, file drag-and-drop upload/overwrite, and fix prompt on boot
+- tabs: add tab context menu, improve drag-and-drop, and fix manual reconnect
+- sidebar & command palette: add connection context menu, confirmation dialog for removing server, and upload files command
+- ui: various fixes, tweaks, and improved fuzzy search
