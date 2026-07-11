@@ -3,6 +3,7 @@ import {
   AttachRemoteSession,
   AttachSession,
   CloseTab,
+  DetectTabSession,
   KillRemoteSession,
   KillSession,
   OpenRemoteShell,
@@ -65,7 +66,60 @@ export async function openTmuxHere(tabId?: string) {
   await WriteTab(tab.id, OPEN_TMUX_HERE_COMMAND)
   window.setTimeout(() => {
     void refreshSessions()
+    void promoteShellTabIfSessionDetected(tab.id)
   }, 500)
+}
+
+// A shell tab has no known tmux session by default. But the user (or an
+// external script, e.g. one on $PATH) may run `tmux new-session`/`attach`
+// directly inside that shell rather than through tmiix's own attach flow —
+// tmiix's own "Open tmux session here" above does exactly this. In both
+// cases the tab's internal state never learns a session is now live there,
+// so actions like "Kill session" silently no-op. We reconcile by asking the
+// backend whether a tmux client is attached on this tab's pty (matched via
+// tty, see DetectTabSession) and, if so, promoting the tab to a proper
+// session tab — the same state an explicit "Switch session" attach produces.
+const detectingTabs = new Set<string>()
+
+async function detectTabSessionWithRetry(tabId: string): Promise<string | null> {
+  // Title-change events (the only externally observable signal for a script
+  // that just ran `tmux new-session`) can fire slightly before the tmux
+  // client has actually registered itself, so retry once after a short delay.
+  for (const delay of [0, 600]) {
+    if (delay) await new Promise((resolve) => window.setTimeout(resolve, delay))
+    try {
+      const sessionName = await DetectTabSession(tabId)
+      if (sessionName) return sessionName
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+async function promoteShellTabIfSessionDetected(tabId: string) {
+  if (detectingTabs.has(tabId)) return
+  const tab = getTabs().find((item) => item.id === tabId)
+  if (!tab || tab.kind !== 'shell' || tab.serverName || tab.sessionName) return
+
+  detectingTabs.add(tabId)
+  try {
+    const sessionName = await detectTabSessionWithRetry(tabId)
+    if (!sessionName) return
+
+    const current = getTabs().find((item) => item.id === tabId)
+    if (!current || current.kind !== 'shell' || current.sessionName) return
+
+    tabs$.items.set((list) =>
+      list.map((item) =>
+        item.id === tabId ? { ...item, kind: 'session', sessionName, tmuxStarted: true } : item,
+      ),
+    )
+    markRecentSession(sessionName)
+    void refreshSessions()
+  } finally {
+    detectingTabs.delete(tabId)
+  }
 }
 
 export function getAttachedSessions() {
@@ -529,12 +583,14 @@ export function syncRemoteTabColors() {
 }
 
 export function updateTabLabel(id: string, label: string) {
+  let isLocalShell = false
   tabs$.items.set((current) =>
     current.map((tab) => {
       if (tab.id !== id) return tab
 
       let nextLabel = label
       const isLocal = (tab.kind === 'shell' && !tab.serverName) || tab.kind === 'session'
+      isLocalShell = tab.kind === 'shell' && !tab.serverName
 
       if (isLocal) {
         // Strip user@host: prefix if present (common in default shell prompts)
@@ -550,4 +606,8 @@ export function updateTabLabel(id: string, label: string) {
       return { ...tab, label: nextLabel }
     }),
   )
+
+  // A local shell's title just changed — it may have just started a tmux
+  // session (e.g. an external ~/bin script). Check in the background.
+  if (isLocalShell) void promoteShellTabIfSessionDetected(id)
 }

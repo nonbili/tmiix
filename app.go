@@ -12,6 +12,7 @@ import (
 	goruntime "runtime"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/creack/pty"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -19,6 +20,7 @@ import (
 
 type ptySession struct {
 	ptmx            *os.File
+	ttyName         string // slave pty path (e.g. /dev/pts/4); see DetectTabSession.
 	cmd             *exec.Cmd
 	gen             uint64
 	watchPassphrase bool
@@ -198,6 +200,45 @@ func (a *App) AttachSession(tabId, sessionName string) error {
 	return a.startTab(tabId, cmd, false, "")
 }
 
+// DetectTabSession reports the tmux session name attached inside the given
+// tab's pty, if any. A tab starts as a plain shell with no known session, but
+// the user (or a script) may run `tmux new-session`/`tmux attach` directly in
+// that shell rather than through tmiix's own attach flow, leaving the app
+// unaware a session is now live there. We match the tab's slave tty path
+// against `tmux list-clients`, which reports the tty each attached client is
+// running on — the same tty as the tab's slave, since the tmux client is
+// just another process in that shell.
+func (a *App) DetectTabSession(tabId string) (string, error) {
+	a.mu.Lock()
+	s, ok := a.tabs[tabId]
+	a.mu.Unlock()
+	if !ok || s.ttyName == "" {
+		return "", nil
+	}
+	tty := s.ttyName
+
+	out, err := exec.Command("tmux", "list-clients", "-F", "#{client_tty}\t#{session_name}").Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	trimmed := strings.TrimSpace(string(out))
+	if trimmed == "" {
+		return "", nil
+	}
+	for _, line := range strings.Split(trimmed, "\n") {
+		clientTty, sessionName, found := strings.Cut(line, "\t")
+		if found && clientTty == tty {
+			return sessionName, nil
+		}
+	}
+	return "", nil
+}
+
 func (a *App) KillSession(sessionName string) error {
 	sessionName = strings.TrimSpace(sessionName)
 	if sessionName == "" {
@@ -227,14 +268,41 @@ func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, server
 	}
 
 	a.mu.Lock()
-	ptmx, err := pty.Start(cmd)
+	// pty.Start (the usual one-liner) opens the pty pair, wires the slave to
+	// cmd, starts it, and then closes its own reference to the slave file —
+	// discarding its path in the process. We need that path (DetectTabSession
+	// matches it against tmux's #{client_tty}), so open and start it
+	// ourselves instead, the same way pty.Start does internally.
+	ptmx, tty, err := pty.Open()
 	if err != nil {
+		a.mu.Unlock()
+		log.Printf("pty open failed tab=%s cmd=%s err=%v", tabId, cmd.Path, err)
+		return err
+	}
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	cmd.SysProcAttr.Setsid = true
+	cmd.SysProcAttr.Setctty = true
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
+	ttyName := tty.Name()
+	err = cmd.Start()
+	_ = tty.Close()
+	if err != nil {
+		_ = ptmx.Close()
 		a.mu.Unlock()
 		log.Printf("pty start failed tab=%s cmd=%s err=%v", tabId, cmd.Path, err)
 		return err
 	}
 	a.gen++
-	s := &ptySession{ptmx: ptmx, cmd: cmd, gen: a.gen, watchPassphrase: watchPassphrase, serverName: serverName}
+	s := &ptySession{
+		ptmx:            ptmx,
+		ttyName:         ttyName,
+		cmd:             cmd,
+		gen:             a.gen,
+		watchPassphrase: watchPassphrase,
+		serverName:      serverName,
+	}
 	a.tabs[tabId] = s
 	a.mu.Unlock()
 
