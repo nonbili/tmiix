@@ -2,9 +2,11 @@ import { observable } from '@legendapp/state'
 import {
   readStoredLocalColor,
   readStoredSidebarCollapsed,
+  readStoredSidebarView,
   readStoredThemeId,
   readStoredUIThemeId,
   writeStoredLocalColor,
+  type SidebarView,
 } from '../lib/storage'
 import { refreshServers } from './servers'
 
@@ -13,6 +15,7 @@ export const ui$ = observable({
   uiThemeId: readStoredUIThemeId(),
   localColor: readStoredLocalColor(),
   sidebarCollapsed: readStoredSidebarCollapsed(),
+  sidebarView: readStoredSidebarView(),
   askpass: {
     open: false,
     id: '',
@@ -28,7 +31,7 @@ export const ui$ = observable({
   },
   commandPalette: {
     open: false,
-    mode: 'root' as 'root' | 'theme' | 'ui-theme',
+    mode: 'root' as 'root' | 'theme' | 'ui-theme' | 'snippet',
     query: '',
     index: 0,
   },
@@ -82,6 +85,10 @@ export function resolveConfirm(value: boolean) {
 
 export function toggleSidebar() {
   ui$.sidebarCollapsed.set((collapsed) => !collapsed)
+}
+
+export function setSidebarView(view: SidebarView) {
+  ui$.sidebarView.set(view)
 }
 
 export function setThemeId(themeId: string) {
@@ -161,7 +168,7 @@ export function setPaletteIndex(index: number) {
   ui$.palette.index.set(index)
 }
 
-export type CommandPaletteMode = 'root' | 'theme' | 'ui-theme'
+export type CommandPaletteMode = 'root' | 'theme' | 'ui-theme' | 'snippet'
 
 export function openCommandPalette(mode: CommandPaletteMode = 'root') {
   ui$.commandPalette.mode.set(mode)

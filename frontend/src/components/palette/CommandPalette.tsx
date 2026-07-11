@@ -32,6 +32,9 @@ import { formatActionParts } from '../../lib/keybindings'
 import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
 import { pickAndUploadFiles } from '../../lib/upload'
+import { sessionMatchRank } from '../../lib/search'
+import { OpenSnippetsDir } from '../../../wailsjs/go/main/App'
+import { runSnippet, snippets$ } from '../../state/snippets'
 import { ROOT_COMMAND_ITEMS, filterCommandItems, type CommandItemSpec } from './commandItems'
 import { FooterHint } from './FooterHint'
 
@@ -87,6 +90,11 @@ const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
   },
   'change-theme': () => setCommandPaletteMode('theme'),
   'change-ui-theme': () => setCommandPaletteMode('ui-theme'),
+  'run-snippet': () => setCommandPaletteMode('snippet'),
+  'open-snippets-folder': () => {
+    closeCommandPalette()
+    void OpenSnippetsDir()
+  },
   'reload-settings': async () => {
     closeCommandPalette()
     await reloadSettings()
@@ -112,6 +120,7 @@ export function CommandPalette() {
   const selectedIndex = useValue(ui$.commandPalette.index)
   const activeThemeId = useValue(ui$.themeId)
   const activeUIThemeId = useValue(ui$.uiThemeId)
+  const runbooks = useValue(snippets$.runbooks)
   useValue(tabs$.items)
   useValue(tabs$.activeTabId)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -165,6 +174,30 @@ export function CommandPalette() {
         },
       }))
       source = [systemEntry, ...themeEntries]
+    } else if (mode === 'snippet') {
+      const snippetEntries: CommandItem[] = runbooks.flatMap((runbook) =>
+        runbook.snippets.map((snippet) => ({
+          id: `${runbook.name}/${snippet.name}`,
+          label: snippet.name,
+          detail: `${runbook.name} — ${snippet.target === 'new-tab' ? 'new tab' : 'current tab'}${
+            snippet.server ? ` (${snippet.server})` : ''
+          }`,
+          aliases: [runbook.name],
+          run: () => {
+            closeCommandPalette()
+            void runSnippet(snippet)
+          },
+        })),
+      )
+      const normalizedQuery = query.trim()
+      if (!normalizedQuery) return snippetEntries
+      return snippetEntries
+        .filter((item) => sessionMatchRank(`${item.aliases[0]}/${item.label}`, normalizedQuery) !== null)
+        .sort(
+          (left, right) =>
+            (sessionMatchRank(`${left.aliases[0]}/${left.label}`, normalizedQuery) ?? 0) -
+            (sessionMatchRank(`${right.aliases[0]}/${right.label}`, normalizedQuery) ?? 0),
+        )
     } else {
       const activeTab = getActiveTab()
       source = ROOT_COMMAND_ITEMS.filter((spec) => spec.id !== 'open-tmux-here' || canOpenTmuxHere(activeTab)).map(
@@ -176,7 +209,7 @@ export function CommandPalette() {
     }
 
     return filterCommandItems(source, query)
-  }, [activeThemeId, activeUIThemeId, mode, query])
+  }, [activeThemeId, activeUIThemeId, mode, query, runbooks])
 
   useEffect(() => {
     if (!open) return
@@ -293,13 +326,17 @@ export function CommandPalette() {
       ? 'Change theme'
       : mode === 'ui-theme'
         ? 'Change UI theme'
-        : 'Command palette'
+        : mode === 'snippet'
+          ? 'Run snippet'
+          : 'Command palette'
   const placeholder =
     mode === 'theme'
       ? 'Search themes'
       : mode === 'ui-theme'
         ? 'Search UI themes'
-        : 'Type a command or search'
+        : mode === 'snippet'
+          ? 'Search runbooks and snippets'
+          : 'Type a command or search'
   const overlayClassName =
     mode === 'theme' || mode === 'ui-theme'
       ? 'fixed inset-0 grid place-items-start justify-center pt-18 max-[720px]:pt-7 bg-transparent z-20'

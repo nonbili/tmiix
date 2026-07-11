@@ -81,10 +81,22 @@ export const ROOT_COMMAND_ITEMS: CommandItemSpec[] = [
     aliases: ['server', 'ssh', 'remote', 'host'],
   },
   {
+    id: 'run-snippet',
+    label: 'Run snippet',
+    detail: 'Search runbooks and run a saved snippet',
+    aliases: ['snippet', 'runbook', 'run', 'command'],
+  },
+  {
+    id: 'open-snippets-folder',
+    label: 'Open snippets folder',
+    detail: 'Reveal the runbooks/snippets directory',
+    aliases: ['snippet', 'runbook', 'folder', 'open'],
+  },
+  {
     id: 'reload-settings',
     label: 'Reload settings',
-    detail: 'Re-read settings.toml and the themes folder',
-    aliases: ['reload', 'settings', 'refresh', 'themes', 'keybindings'],
+    detail: 'Re-read settings.toml, the themes folder, and snippets',
+    aliases: ['reload', 'settings', 'refresh', 'themes', 'keybindings', 'snippets'],
   },
   {
     id: 'about',

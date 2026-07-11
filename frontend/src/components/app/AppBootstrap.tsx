@@ -5,6 +5,7 @@ import { hasStoredThemeId, hasStoredUIThemeId, readStoredTabsState, storedTabKey
 import { refreshServers, servers$ } from '../../state/servers'
 import { loadServerSessions } from '../../state/sidebar'
 import { refreshRemoteSessions, refreshSessions, sessions$ } from '../../state/sessions'
+import { refreshSnippets } from '../../state/snippets'
 import { showToast } from '../../state/toasts'
 import { setThemeId, setUIThemeId, ui$ } from '../../state/ui'
 import { TERMINAL_THEMES } from '../../themes'
@@ -28,6 +29,7 @@ export function AppBootstrap() {
   const sidebarCollapsed = useValue(ui$.sidebarCollapsed)
 
   useEffect(() => {
+    void refreshSnippets()
     void (async () => {
       await refreshServers()
       if (autoConnectedOnce) return

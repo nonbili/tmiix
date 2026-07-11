@@ -20,10 +20,11 @@ var defaultSettingsTOML []byte
 // Only fields users set are written back; unset keys fall back to defaults
 // embedded in the binary.
 type Settings struct {
-	Theme       string            `toml:"theme" json:"theme"`
-	UITheme     string            `toml:"ui_theme" json:"uiTheme"`
-	Font        FontSettings      `toml:"font" json:"font"`
-	Keybindings map[string]string `toml:"keybindings" json:"keybindings"`
+	Theme        string            `toml:"theme" json:"theme"`
+	UITheme      string            `toml:"ui_theme" json:"uiTheme"`
+	SnippetsPath string            `toml:"snippets_path" json:"snippetsPath"`
+	Font         FontSettings      `toml:"font" json:"font"`
+	Keybindings  map[string]string `toml:"keybindings" json:"keybindings"`
 }
 
 type FontSettings struct {
@@ -90,6 +91,9 @@ func effectiveSettings() (Settings, error) {
 	}
 	if user.UITheme != "" {
 		merged.UITheme = user.UITheme
+	}
+	if user.SnippetsPath != "" {
+		merged.SnippetsPath = user.SnippetsPath
 	}
 	if user.Font.Family != "" {
 		merged.Font.Family = user.Font.Family

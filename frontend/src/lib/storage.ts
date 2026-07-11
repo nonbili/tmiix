@@ -5,6 +5,7 @@ import { remoteKey } from './session'
 export const THEME_STORAGE_KEY = 'tmiix.terminal.theme'
 export const UI_THEME_STORAGE_KEY = 'tmiix.ui.theme'
 export const SIDEBAR_STORAGE_KEY = 'tmiix.sidebar.collapsed'
+export const SIDEBAR_VIEW_STORAGE_KEY = 'tmiix.sidebar.view'
 export const RECENT_SESSIONS_STORAGE_KEY = 'tmiix.recent.sessions'
 export const LOCAL_COLOR_STORAGE_KEY = 'tmiix.local.color'
 export const TABS_STORAGE_KEY = 'tmiix.tabs'
@@ -24,6 +25,16 @@ export function readStoredSidebarCollapsed(): boolean {
     return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1'
   } catch {
     return false
+  }
+}
+
+export type SidebarView = 'sessions' | 'snippets'
+
+export function readStoredSidebarView(): SidebarView {
+  try {
+    return window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY) === 'snippets' ? 'snippets' : 'sessions'
+  } catch {
+    return 'sessions'
   }
 }
 

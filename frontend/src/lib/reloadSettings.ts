@@ -1,4 +1,5 @@
 import { ListThemes, ListUIThemes } from '../../wailsjs/go/main/App'
+import { refreshSnippets } from '../state/snippets'
 import { setTerminalThemes, type TerminalTheme } from '../themes'
 import { setUIThemes, type UITheme } from '../uiThemes'
 import { loadKeybindings } from './keybindings'
@@ -12,5 +13,6 @@ export async function reloadSettings() {
     ListUIThemes()
       .then((themes) => setUIThemes(themes as unknown as UITheme[]))
       .catch(() => {}),
+    refreshSnippets(),
   ])
 }

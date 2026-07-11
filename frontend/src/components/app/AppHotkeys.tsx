@@ -2,8 +2,10 @@ import { useValue } from '@legendapp/state/react'
 import { useEffect } from 'react'
 import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
 import { matchAction } from '../../lib/keybindings'
+import { sessionMatchRank } from '../../lib/search'
 import { servers$ } from '../../state/servers'
 import { getPaletteItems, refreshSessions, sessions$ } from '../../state/sessions'
+import { snippets$ } from '../../state/snippets'
 import { closeTab, cycleActiveTab, getActiveTab, setActiveTabId, tabs$ } from '../../state/tabs'
 import { TERMINAL_THEMES } from '../../themes'
 import { UI_THEMES } from '../../uiThemes'
@@ -19,7 +21,7 @@ import {
   ui$,
 } from '../../state/ui'
 
-function getCommandPaletteItemCount(mode: 'root' | 'theme' | 'ui-theme', query: string) {
+function getCommandPaletteItemCount(mode: 'root' | 'theme' | 'ui-theme' | 'snippet', query: string) {
   let items: { label: string; detail: string; aliases: string[] }[]
   if (mode === 'theme') {
     items = TERMINAL_THEMES.map((theme) => ({
@@ -36,6 +38,13 @@ function getCommandPaletteItemCount(mode: 'root' | 'theme' | 'ui-theme', query: 
         aliases: [theme.id, 'ui', 'theme', theme.colorScheme],
       })),
     ]
+  } else if (mode === 'snippet') {
+    const normalizedQuery = query.trim()
+    const entries = snippets$.runbooks.peek().flatMap((runbook) =>
+      runbook.snippets.map((snippet) => `${runbook.name}/${snippet.name}`),
+    )
+    if (!normalizedQuery) return entries.length
+    return entries.filter((entry) => sessionMatchRank(entry, normalizedQuery) !== null).length
   } else {
     items = ROOT_COMMAND_ITEMS
   }

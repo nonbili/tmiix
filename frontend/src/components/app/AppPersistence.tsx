@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import {
   RECENT_SESSIONS_STORAGE_KEY,
   SIDEBAR_STORAGE_KEY,
+  SIDEBAR_VIEW_STORAGE_KEY,
   THEME_STORAGE_KEY,
   UI_THEME_STORAGE_KEY,
   writeStoredTabsState,
@@ -15,6 +16,7 @@ import { ui$ } from '../../state/ui'
 
 export function AppPersistence() {
   const sidebarCollapsed = useValue(ui$.sidebarCollapsed)
+  const sidebarView = useValue(ui$.sidebarView)
   const recentSessions = useValue(sessions$.recent)
   const themeId = useValue(ui$.themeId)
   const uiThemeId = useValue(ui$.uiThemeId)
@@ -28,6 +30,14 @@ export function AppPersistence() {
       /* ignore */
     }
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, sidebarView)
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarView])
 
   useEffect(() => {
     try {

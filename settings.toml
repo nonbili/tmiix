@@ -15,6 +15,11 @@ theme = "github-dark"
 # follows the OS light/dark preference and updates live.
 ui_theme = "system"
 
+# Directory containing your snippet runbooks. Leave empty to use the default
+# ~/.config/tmiix/snippets. Each subfolder is a runbook; each file inside it is
+# a snippet. See the "Snippets" section of the docs for the folder format.
+snippets_path = ""
+
 [font]
 # Terminal font family. Keep quotes around comma-separated fallback lists.
 family = '"JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace'
