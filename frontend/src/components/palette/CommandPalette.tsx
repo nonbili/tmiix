@@ -42,6 +42,7 @@ type CommandItem = CommandItemSpec & {
   run: () => void | Promise<void>
   active?: boolean
   danger?: boolean
+  badge?: string
 }
 
 const ROOT_RUNNERS: Record<string, () => void | Promise<void>> = {
@@ -134,6 +135,22 @@ export function CommandPalette() {
   const previousModeRef = useRef(mode)
 
   const items = useMemo(() => {
+    const snippetEntries: CommandItem[] = runbooks.flatMap((runbook) =>
+      runbook.snippets.map((snippet) => ({
+        id: `${runbook.name}/${snippet.name}`,
+        label: snippet.name,
+        detail: `${runbook.name} — ${snippet.tab === 'new-tab' ? 'new tab' : 'current tab'}${
+          snippet.target ? ` (${snippet.target})` : ''
+        }`,
+        aliases: [runbook.name, 'snippet'],
+        badge: runbook.name,
+        run: () => {
+          closeCommandPalette()
+          void runSnippet(snippet)
+        },
+      })),
+    )
+
     let source: CommandItem[]
     if (mode === 'theme') {
       source = TERMINAL_THEMES.map((theme) => ({
@@ -175,20 +192,6 @@ export function CommandPalette() {
       }))
       source = [systemEntry, ...themeEntries]
     } else if (mode === 'snippet') {
-      const snippetEntries: CommandItem[] = runbooks.flatMap((runbook) =>
-        runbook.snippets.map((snippet) => ({
-          id: `${runbook.name}/${snippet.name}`,
-          label: snippet.name,
-          detail: `${runbook.name} — ${snippet.tab === 'new-tab' ? 'new tab' : 'current tab'}${
-            snippet.target ? ` (${snippet.target})` : ''
-          }`,
-          aliases: [runbook.name],
-          run: () => {
-            closeCommandPalette()
-            void runSnippet(snippet)
-          },
-        })),
-      )
       const normalizedQuery = query.trim()
       if (!normalizedQuery) return snippetEntries
       return snippetEntries
@@ -200,12 +203,13 @@ export function CommandPalette() {
         )
     } else {
       const activeTab = getActiveTab()
-      source = ROOT_COMMAND_ITEMS.filter((spec) => spec.id !== 'open-tmux-here' || canOpenTmuxHere(activeTab)).map(
-        (spec) => ({
-          ...spec,
-          run: ROOT_RUNNERS[spec.id] ?? (() => closeCommandPalette()),
-        }),
-      )
+      const rootItems: CommandItem[] = ROOT_COMMAND_ITEMS.filter(
+        (spec) => spec.id !== 'open-tmux-here' || canOpenTmuxHere(activeTab),
+      ).map((spec) => ({
+        ...spec,
+        run: ROOT_RUNNERS[spec.id] ?? (() => closeCommandPalette()),
+      }))
+      source = [...rootItems, ...snippetEntries]
     }
 
     return filterCommandItems(source, query)
@@ -402,6 +406,11 @@ export function CommandPalette() {
                 <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-[13px]">
                   {item.label}
                 </span>
+                {item.badge ? (
+                  <span className="text-foreground-subtle text-[10px] tracking-[0.08em] uppercase whitespace-nowrap">
+                    {item.badge}
+                  </span>
+                ) : null}
                 {isActive ? <span className="text-foreground-subtle text-[10px] tracking-[0.08em] uppercase">active</span> : null}
                 {item.danger ? (
                   <span className="text-term-red text-[10px] tracking-[0.08em] uppercase">kill</span>
