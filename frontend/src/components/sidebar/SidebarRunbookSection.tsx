@@ -68,8 +68,10 @@ export function SidebarRunbookSection({ runbook }: SidebarRunbookSectionProps) {
               <SidebarSnippetRow
                 key={snippet.name}
                 snippet={snippet}
-                onClick={() => void runSnippet(snippet)}
+                onOpen={() => openEditSnippetEditor(snippet)}
+                onRun={() => void runSnippet(snippet)}
                 contextMenuItems={[
+                  { kind: 'button', label: 'Run', onClick: () => void runSnippet(snippet) },
                   { kind: 'button', label: 'Edit', onClick: () => openEditSnippetEditor(snippet) },
                   { kind: 'button', label: 'Delete', danger: true, onClick: () => void deleteSnippet(snippet) },
                 ]}

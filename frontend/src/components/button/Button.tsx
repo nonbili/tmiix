@@ -11,7 +11,7 @@ const variantClasses = {
 export function Button({ variant = 'secondary', className, ...props }: ButtonProps) {
   return (
     <button
-      className={`h-8 px-3 rounded-[6px] text-sm transition-colors ${variantClasses[variant]} ${className ?? ''}`}
+      className={`h-7 px-2.5 rounded-[6px] text-xs transition-colors ${variantClasses[variant]} ${className ?? ''}`}
       type="button"
       {...props}
     />
