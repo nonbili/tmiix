@@ -75,7 +75,7 @@ export const runbookDialog$ = observable<RunbookDialogState>({
   open: false,
   oldName: null,
   name: '',
-  tab: 'current-tab',
+  tab: 'new-tab',
   target: '',
 })
 
@@ -92,7 +92,7 @@ export const snippetEditor$ = observable<SnippetEditorState>({
 })
 
 export function openCreateRunbookDialog() {
-  runbookDialog$.set({ open: true, oldName: null, name: '', tab: 'current-tab', target: '' })
+  runbookDialog$.set({ open: true, oldName: null, name: '', tab: 'new-tab', target: '' })
 }
 
 export function openEditRunbookDialog(runbook: main.Runbook) {
@@ -164,7 +164,7 @@ export async function saveSnippetEditor() {
   snippetEditor$.oldName.set(state.name.trim())
 }
 
-function getRunbookDefaults(runbookName: string): { tab: 'current-tab' | 'new-tab'; target: string } {
+export function getRunbookDefaults(runbookName: string): { tab: 'current-tab' | 'new-tab'; target: string } {
   const runbook = snippets$.runbooks.peek().find((r) => r.name === runbookName)
   return { tab: runbook?.tab === 'new-tab' ? 'new-tab' : 'current-tab', target: runbook?.target ?? '' }
 }

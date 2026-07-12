@@ -4,7 +4,7 @@ import { FileCode2, Terminal } from 'lucide-react'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { getKnownServers, servers$ } from '../../state/servers'
 import { addServerFromCommand, revealServer } from '../../state/sidebar'
-import { closeRemotePalette, openRemotePalette, setSidebarView, ui$ } from '../../state/ui'
+import { closeRemotePalette, openRemotePalette, setSidebarView, setSidebarWidth, ui$ } from '../../state/ui'
 import { RemoteServerPalette } from '../palette/RemoteServerPalette'
 import { SidebarLocalHeader, SidebarLocalSessions } from './SidebarLocalSection'
 import { SidebarSectionMenu, type SectionMenuItem } from './SidebarSectionMenu'
@@ -14,6 +14,23 @@ import { SidebarSnippetsSection } from './SidebarSnippetsSection'
 export function Sidebar() {
   const collapsed = useValue(ui$.sidebarCollapsed)
   const view = useValue(ui$.sidebarView)
+  const width = useValue(ui$.sidebarWidth)
+
+  const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const startX = event.clientX
+    const startWidth = ui$.sidebarWidth.peek()
+    const onMove = (move: PointerEvent) => {
+      setSidebarWidth(startWidth + move.clientX - startX)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
   const servers = useValue(servers$.items)
   const configHosts = useValue(servers$.configHosts)
   const remotePaletteOpen = useValue(ui$.remotePalette.open)
@@ -29,9 +46,10 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`flex flex-col bg-surface/96 border-r border-border min-w-0 overflow-hidden transition-[opacity,border-color] duration-[120ms] ease-in-out ${
-          collapsed ? 'opacity-0 pointer-events-none border-r-transparent w-0' : 'w-[260px] max-[720px]:w-[220px] max-[480px]:w-[180px]'
+        className={`relative flex flex-col bg-surface/96 border-r border-border min-w-0 overflow-hidden transition-[opacity,border-color] duration-[120ms] ease-in-out ${
+          collapsed ? 'opacity-0 pointer-events-none border-r-transparent' : ''
         }`}
+        style={{ width: collapsed ? 0 : width }}
       >
         {view === 'sessions' ? (
           <>
@@ -78,6 +96,11 @@ export function Sidebar() {
             Snippets
           </button>
         </div>
+
+        <div
+          className="absolute right-0 inset-y-0 w-1 cursor-col-resize z-10 hover:bg-accent/50 active:bg-accent/50 transition-colors"
+          onPointerDown={startResize}
+        />
       </aside>
 
       {menu.open ? (

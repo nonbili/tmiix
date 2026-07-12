@@ -36,10 +36,11 @@ export function CodeTextarea({ value, onChange, placeholder, className = '', row
       </div>
       <textarea
         ref={textareaRef}
-        className="flex-1 min-w-0 bg-transparent border-0 outline-0 resize-none px-2 py-2 text-foreground-strong placeholder:text-foreground-subtle"
+        className="flex-1 min-w-0 bg-transparent border-0 outline-0 resize-none px-2 py-2 text-foreground-strong placeholder:text-foreground-subtle whitespace-pre overflow-x-auto"
         value={value}
         placeholder={placeholder}
         rows={rows}
+        wrap="off"
         spellCheck={false}
         onChange={(event) => onChange(event.target.value)}
         onScroll={syncGutterScroll}

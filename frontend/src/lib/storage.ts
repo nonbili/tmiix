@@ -6,6 +6,7 @@ export const THEME_STORAGE_KEY = 'tmiix.terminal.theme'
 export const UI_THEME_STORAGE_KEY = 'tmiix.ui.theme'
 export const SIDEBAR_STORAGE_KEY = 'tmiix.sidebar.collapsed'
 export const SIDEBAR_VIEW_STORAGE_KEY = 'tmiix.sidebar.view'
+export const SIDEBAR_WIDTH_STORAGE_KEY = 'tmiix.sidebar.width'
 export const RECENT_SESSIONS_STORAGE_KEY = 'tmiix.recent.sessions'
 export const LOCAL_COLOR_STORAGE_KEY = 'tmiix.local.color'
 export const TABS_STORAGE_KEY = 'tmiix.tabs'
@@ -25,6 +26,23 @@ export function readStoredSidebarCollapsed(): boolean {
     return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1'
   } catch {
     return false
+  }
+}
+
+export const DEFAULT_SIDEBAR_WIDTH = 260
+export const MIN_SIDEBAR_WIDTH = 180
+export const MAX_SIDEBAR_WIDTH = 480
+
+export function clampSidebarWidth(width: number): number {
+  return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, Math.round(width)))
+}
+
+export function readStoredSidebarWidth(): number {
+  try {
+    const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY))
+    return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : DEFAULT_SIDEBAR_WIDTH
+  } catch {
+    return DEFAULT_SIDEBAR_WIDTH
   }
 }
 

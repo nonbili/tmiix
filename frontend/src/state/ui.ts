@@ -1,8 +1,10 @@
 import { observable } from '@legendapp/state'
 import {
+  clampSidebarWidth,
   readStoredLocalColor,
   readStoredSidebarCollapsed,
   readStoredSidebarView,
+  readStoredSidebarWidth,
   readStoredThemeId,
   readStoredUIThemeId,
   writeStoredLocalColor,
@@ -16,6 +18,7 @@ export const ui$ = observable({
   localColor: readStoredLocalColor(),
   sidebarCollapsed: readStoredSidebarCollapsed(),
   sidebarView: readStoredSidebarView(),
+  sidebarWidth: readStoredSidebarWidth(),
   askpass: {
     open: false,
     id: '',
@@ -89,6 +92,10 @@ export function toggleSidebar() {
 
 export function setSidebarView(view: SidebarView) {
   ui$.sidebarView.set(view)
+}
+
+export function setSidebarWidth(width: number) {
+  ui$.sidebarWidth.set(clampSidebarWidth(width))
 }
 
 export function setThemeId(themeId: string) {

@@ -5,6 +5,7 @@ import { getKnownServers } from '../../state/servers'
 import {
   closeSnippetEditor,
   deleteSnippet,
+  getRunbookDefaults,
   runSnippetEditorDraft,
   saveSnippetEditor,
   snippetEditor$,
@@ -22,6 +23,9 @@ export function SnippetEditorPane() {
 
   const isEdit = state.oldName !== null
   const knownServers = getKnownServers()
+  const defaults = getRunbookDefaults(state.runbook)
+  const inheritedLabel =
+    defaults.tab === 'new-tab' ? `New tab: ${defaults.target || 'Local'}` : 'Current tab'
 
   const save = async () => {
     if (saving) return
@@ -92,7 +96,7 @@ export function SnippetEditorPane() {
                 snippetEditor$.tab.set(event.target.value as '' | 'current-tab' | 'new-tab')
               }
             >
-              <option value="">Inherit</option>
+              <option value="">Inherit ({inheritedLabel})</option>
               <option value="current-tab">Current tab</option>
               <option value="new-tab">New tab</option>
             </Select>
