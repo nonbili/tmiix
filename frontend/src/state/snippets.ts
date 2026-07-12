@@ -31,10 +31,10 @@ export function toggleRunbook(name: string) {
 export async function runSnippet(snippet: main.Snippet) {
   const command = snippet.body.endsWith('\n') ? snippet.body : `${snippet.body}\n`
 
-  if (snippet.target === 'new-tab') {
+  if (snippet.tab === 'new-tab') {
     const before = new Set(tabs$.items.peek().map((tab) => tab.id))
-    if (snippet.server) {
-      await openRemoteShell(snippet.server)
+    if (snippet.target) {
+      await openRemoteShell(snippet.target)
     } else {
       await openLocalShell()
     }
@@ -57,8 +57,8 @@ export interface RunbookDialogState {
   open: boolean
   oldName: string | null // null when creating
   name: string
-  target: 'current-tab' | 'new-tab'
-  server: string
+  tab: 'current-tab' | 'new-tab'
+  target: string
 }
 
 export interface SnippetEditorState {
@@ -66,8 +66,8 @@ export interface SnippetEditorState {
   runbook: string
   oldName: string | null // null when creating
   name: string
-  target: '' | 'current-tab' | 'new-tab' // '' = inherit from runbook
-  server: string
+  tab: '' | 'current-tab' | 'new-tab' // '' = inherit from runbook
+  target: string
   body: string
 }
 
@@ -75,8 +75,8 @@ export const runbookDialog$ = observable<RunbookDialogState>({
   open: false,
   oldName: null,
   name: '',
-  target: 'current-tab',
-  server: '',
+  tab: 'current-tab',
+  target: '',
 })
 
 // The snippet editor is a full-pane view (not a modal) so it can stay open
@@ -86,13 +86,13 @@ export const snippetEditor$ = observable<SnippetEditorState>({
   runbook: '',
   oldName: null,
   name: '',
+  tab: '',
   target: '',
-  server: '',
   body: '',
 })
 
 export function openCreateRunbookDialog() {
-  runbookDialog$.set({ open: true, oldName: null, name: '', target: 'current-tab', server: '' })
+  runbookDialog$.set({ open: true, oldName: null, name: '', tab: 'current-tab', target: '' })
 }
 
 export function openEditRunbookDialog(runbook: main.Runbook) {
@@ -100,8 +100,8 @@ export function openEditRunbookDialog(runbook: main.Runbook) {
     open: true,
     oldName: runbook.name,
     name: runbook.name,
-    target: runbook.target === 'new-tab' ? 'new-tab' : 'current-tab',
-    server: runbook.server ?? '',
+    tab: runbook.tab === 'new-tab' ? 'new-tab' : 'current-tab',
+    target: runbook.target ?? '',
   })
 }
 
@@ -111,7 +111,7 @@ export function closeRunbookDialog() {
 
 export async function saveRunbookDialog() {
   const state = runbookDialog$.peek()
-  await SaveRunbook(state.oldName ?? '', state.name.trim(), state.target, state.server.trim())
+  await SaveRunbook(state.oldName ?? '', state.name.trim(), state.tab, state.target.trim())
   closeRunbookDialog()
   await refreshSnippets()
 }
@@ -129,7 +129,7 @@ export async function deleteRunbook(name: string) {
 }
 
 export function openCreateSnippetEditor(runbook: string) {
-  snippetEditor$.set({ open: true, runbook, oldName: null, name: '', target: '', server: '', body: '' })
+  snippetEditor$.set({ open: true, runbook, oldName: null, name: '', tab: '', target: '', body: '' })
 }
 
 export function openEditSnippetEditor(snippet: main.Snippet) {
@@ -138,8 +138,8 @@ export function openEditSnippetEditor(snippet: main.Snippet) {
     runbook: snippet.runbook,
     oldName: snippet.name,
     name: snippet.name,
-    target: (snippet.ownTarget as '' | 'current-tab' | 'new-tab') || '',
-    server: snippet.ownServer ?? '',
+    tab: (snippet.ownTab as '' | 'current-tab' | 'new-tab') || '',
+    target: snippet.ownTarget ?? '',
     body: snippet.body,
   })
 }
@@ -155,8 +155,8 @@ export async function saveSnippetEditor() {
     state.oldName ?? '',
     state.name.trim(),
     state.body,
-    state.target,
-    state.server.trim(),
+    state.tab,
+    state.target.trim(),
   )
   await refreshSnippets()
   // Keep editing (now as an edit of the just-saved snippet) rather than
@@ -164,9 +164,9 @@ export async function saveSnippetEditor() {
   snippetEditor$.oldName.set(state.name.trim())
 }
 
-function getRunbookDefaults(runbookName: string): { target: 'current-tab' | 'new-tab'; server: string } {
+function getRunbookDefaults(runbookName: string): { tab: 'current-tab' | 'new-tab'; target: string } {
   const runbook = snippets$.runbooks.peek().find((r) => r.name === runbookName)
-  return { target: runbook?.target === 'new-tab' ? 'new-tab' : 'current-tab', server: runbook?.server ?? '' }
+  return { tab: runbook?.tab === 'new-tab' ? 'new-tab' : 'current-tab', target: runbook?.target ?? '' }
 }
 
 // Runs the snippet editor's current (possibly unsaved) draft, so you can
@@ -174,15 +174,15 @@ function getRunbookDefaults(runbookName: string): { target: 'current-tab' | 'new
 export async function runSnippetEditorDraft() {
   const state = snippetEditor$.peek()
   const defaults = getRunbookDefaults(state.runbook)
-  const target = state.target || defaults.target
-  const server = state.target === '' ? defaults.server : state.server.trim()
+  const tab = state.tab || defaults.tab
+  const target = state.tab === '' ? defaults.target : state.target.trim()
   await runSnippet(
     main.Snippet.createFrom({
       runbook: state.runbook,
       name: state.name.trim() || '(draft)',
       body: state.body,
+      tab,
       target,
-      server,
     }),
   )
 }

@@ -19,7 +19,7 @@ export function SidebarSnippetsSection() {
     <div data-section="snippets" className="flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between h-8 pl-[14px] pr-2 border-b border-border/80 text-foreground-subtle text-[11px] uppercase tracking-[0.08em] bg-elevated/40 shrink-0">
         <span>Snippets</span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <IconButton
             icon={<Plus size={14} strokeWidth={1.7} />}
             title="New runbook"
@@ -36,7 +36,7 @@ export function SidebarSnippetsSection() {
           />
           <IconButton
             icon={<FolderOpen size={14} strokeWidth={1.7} />}
-            title="Open snippets folder"
+            title="Show in folder"
             size={16}
             className="text-foreground-subtle hover:text-foreground"
             onClick={() => void OpenSnippetsDir()}

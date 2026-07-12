@@ -14,8 +14,8 @@ import (
 const runbookMetaFile = ".tmiix.toml"
 
 const (
-	targetCurrentTab = "current-tab"
-	targetNewTab     = "new-tab"
+	tabCurrent = "current-tab"
+	tabNew     = "new-tab"
 )
 
 // Snippet is a single runnable file inside a runbook folder.
@@ -23,27 +23,27 @@ type Snippet struct {
 	Runbook string `json:"runbook"`
 	Name    string `json:"name"`
 	Body    string `json:"body"`
-	Target  string `json:"target"` // resolved target, after inheriting the runbook's default
-	Server  string `json:"server,omitempty"`
-	// OwnTarget/OwnServer are the explicit values from the snippet's own
+	Tab     string `json:"tab"` // resolved tab, after inheriting the runbook's default
+	Target  string `json:"target,omitempty"`
+	// OwnTab/OwnTarget are the explicit values from the snippet's own
 	// header (empty when it inherits from the runbook) — used to edit a
 	// snippet without losing whether it was inheriting.
+	OwnTab    string `json:"ownTab,omitempty"`
 	OwnTarget string `json:"ownTarget,omitempty"`
-	OwnServer string `json:"ownServer,omitempty"`
 }
 
 // Runbook is a one-level folder of snippets under the snippets root.
 type Runbook struct {
 	Name     string    `json:"name"`
-	Target   string    `json:"target"`
-	Server   string    `json:"server,omitempty"`
+	Tab      string    `json:"tab"`
+	Target   string    `json:"target,omitempty"`
 	Snippets []Snippet `json:"snippets"`
 }
 
 // runbookMeta is the on-disk shape of a runbook's .tmiix.toml.
 type runbookMeta struct {
+	Tab    string `toml:"tab"`
 	Target string `toml:"target"`
-	Server string `toml:"server"`
 }
 
 // snippetsRootDir resolves the configured snippets directory, falling back to
@@ -95,12 +95,12 @@ func (a *App) ListRunbooks() ([]Runbook, error) {
 
 func loadRunbook(root, name string) (Runbook, error) {
 	dir := filepath.Join(root, name)
-	meta := runbookMeta{Target: targetCurrentTab}
+	meta := runbookMeta{Tab: tabCurrent}
 	if data, err := os.ReadFile(filepath.Join(dir, runbookMetaFile)); err == nil {
 		_ = toml.Unmarshal(data, &meta)
 	}
-	if meta.Target != targetCurrentTab && meta.Target != targetNewTab {
-		meta.Target = targetCurrentTab
+	if meta.Tab != tabCurrent && meta.Tab != tabNew {
+		meta.Tab = tabCurrent
 	}
 
 	entries, err := os.ReadDir(dir)
@@ -108,7 +108,7 @@ func loadRunbook(root, name string) (Runbook, error) {
 		return Runbook{}, err
 	}
 
-	runbook := Runbook{Name: name, Target: meta.Target, Server: meta.Server, Snippets: []Snippet{}}
+	runbook := Runbook{Name: name, Tab: meta.Tab, Target: meta.Target, Snippets: []Snippet{}}
 	for _, entry := range entries {
 		if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
@@ -125,14 +125,14 @@ func loadRunbook(root, name string) (Runbook, error) {
 	return runbook, nil
 }
 
-// parseSnippet extracts an optional "# target:"/"# server:" header from the
+// parseSnippet extracts an optional "# tab:"/"# target:" header from the
 // leading comment block of a snippet file, falling back to the runbook's
-// default target/server when the header is absent.
+// default tab/target when the header is absent.
 func parseSnippet(runbookName, filename, body string, defaults runbookMeta) Snippet {
+	tab := defaults.Tab
 	target := defaults.Target
-	server := defaults.Server
+	ownTab := ""
 	ownTarget := ""
-	ownServer := ""
 
 	lines := strings.Split(body, "\n")
 	bodyStart := 0
@@ -146,18 +146,18 @@ func parseSnippet(runbookName, filename, body string, defaults runbookMeta) Snip
 			break
 		}
 		comment := strings.TrimSpace(strings.TrimPrefix(trimmed, "#"))
-		if value, ok := strings.CutPrefix(comment, "target:"); ok {
+		if value, ok := strings.CutPrefix(comment, "tab:"); ok {
 			value = strings.TrimSpace(value)
-			if value == targetCurrentTab || value == targetNewTab {
-				target = value
-				ownTarget = value
+			if value == tabCurrent || value == tabNew {
+				tab = value
+				ownTab = value
 			}
 			bodyStart = i + 1
 			continue
 		}
-		if value, ok := strings.CutPrefix(comment, "server:"); ok {
-			server = strings.TrimSpace(value)
-			ownServer = server
+		if value, ok := strings.CutPrefix(comment, "target:"); ok {
+			target = strings.TrimSpace(value)
+			ownTarget = target
 			bodyStart = i + 1
 			continue
 		}
@@ -169,10 +169,10 @@ func parseSnippet(runbookName, filename, body string, defaults runbookMeta) Snip
 		Runbook:   runbookName,
 		Name:      name,
 		Body:      strings.TrimLeft(strings.Join(lines[bodyStart:], "\n"), "\n"),
+		Tab:       tab,
 		Target:    target,
-		Server:    server,
+		OwnTab:    ownTab,
 		OwnTarget: ownTarget,
-		OwnServer: ownServer,
 	}
 }
 
@@ -192,7 +192,7 @@ func snippetFileName(name string) string {
 	return name + ".sh"
 }
 
-// writeRunbookMeta writes a runbook's .tmiix.toml default target/server.
+// writeRunbookMeta writes a runbook's .tmiix.toml default tab/target.
 func writeRunbookMeta(dir string, meta runbookMeta) error {
 	f, err := os.Create(filepath.Join(dir, runbookMetaFile))
 	if err != nil {
@@ -203,15 +203,15 @@ func writeRunbookMeta(dir string, meta runbookMeta) error {
 }
 
 // buildSnippetContent renders a snippet file's contents: a shebang, an
-// optional "# target:"/"# server:" header (omitted when target is empty,
+// optional "# tab:"/"# target:" header (omitted when tab is empty,
 // meaning "inherit from the runbook"), then the body.
-func buildSnippetContent(body, target, server string) string {
+func buildSnippetContent(body, tab, target string) string {
 	var b strings.Builder
 	b.WriteString("#!/bin/sh\n")
-	if target != "" {
-		b.WriteString("# target: " + target + "\n")
-		if server != "" {
-			b.WriteString("# server: " + server + "\n")
+	if tab != "" {
+		b.WriteString("# tab: " + tab + "\n")
+		if target != "" {
+			b.WriteString("# target: " + target + "\n")
 		}
 	}
 	b.WriteString(strings.TrimRight(body, "\n"))
@@ -220,16 +220,16 @@ func buildSnippetContent(body, target, server string) string {
 }
 
 // SaveRunbook creates a runbook (oldName == "") or renames/updates an
-// existing one's default target/server (oldName == its current name).
-func (a *App) SaveRunbook(oldName, name, target, server string) error {
+// existing one's default tab/target (oldName == its current name).
+func (a *App) SaveRunbook(oldName, name, tab, target string) error {
 	name, err := sanitizeName(name)
 	if err != nil {
 		return err
 	}
-	if target != targetCurrentTab && target != targetNewTab {
-		target = targetCurrentTab
+	if tab != tabCurrent && tab != tabNew {
+		tab = tabCurrent
 	}
-	server = strings.TrimSpace(server)
+	target = strings.TrimSpace(target)
 
 	root, err := snippetsRootDir()
 	if err != nil {
@@ -259,7 +259,7 @@ func (a *App) SaveRunbook(oldName, name, target, server string) error {
 		}
 	}
 
-	return writeRunbookMeta(dir, runbookMeta{Target: target, Server: server})
+	return writeRunbookMeta(dir, runbookMeta{Tab: tab, Target: target})
 }
 
 // DeleteRunbook removes a runbook folder and everything inside it.
@@ -276,9 +276,9 @@ func (a *App) DeleteRunbook(name string) error {
 }
 
 // SaveSnippet creates a snippet (oldName == "") or renames/updates an
-// existing one within runbook. An empty target means "inherit from the
+// existing one within runbook. An empty tab means "inherit from the
 // runbook" (no header is written).
-func (a *App) SaveSnippet(runbook, oldName, name, body, target, server string) error {
+func (a *App) SaveSnippet(runbook, oldName, name, body, tab, target string) error {
 	runbook, err := sanitizeName(runbook)
 	if err != nil {
 		return err
@@ -287,10 +287,10 @@ func (a *App) SaveSnippet(runbook, oldName, name, body, target, server string) e
 	if err != nil {
 		return err
 	}
-	if target != "" && target != targetCurrentTab && target != targetNewTab {
-		return errors.New("invalid target")
+	if tab != "" && tab != tabCurrent && tab != tabNew {
+		return errors.New("invalid tab")
 	}
-	server = strings.TrimSpace(server)
+	target = strings.TrimSpace(target)
 
 	root, err := snippetsRootDir()
 	if err != nil {
@@ -315,7 +315,7 @@ func (a *App) SaveSnippet(runbook, oldName, name, body, target, server string) e
 		}
 	}
 
-	content := buildSnippetContent(body, target, server)
+	content := buildSnippetContent(body, tab, target)
 	return os.WriteFile(newPath, []byte(content), 0o644)
 }
 
@@ -348,11 +348,11 @@ func (a *App) OpenSnippetsDir() error {
 		if err := os.MkdirAll(exampleDir, 0o755); err != nil {
 			return err
 		}
-		meta := "target = \"current-tab\"\n"
+		meta := "tab = \"current-tab\"\n"
 		if err := os.WriteFile(filepath.Join(exampleDir, runbookMetaFile), []byte(meta), 0o644); err != nil {
 			return err
 		}
-		snippet := "#!/bin/sh\n# target: current-tab\necho hello from tmiix\n"
+		snippet := "#!/bin/sh\n# tab: current-tab\necho hello from tmiix\n"
 		if err := os.WriteFile(filepath.Join(exampleDir, "hello.sh"), []byte(snippet), 0o644); err != nil {
 			return err
 		}

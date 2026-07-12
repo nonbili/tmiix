@@ -179,8 +179,8 @@ export function CommandPalette() {
         runbook.snippets.map((snippet) => ({
           id: `${runbook.name}/${snippet.name}`,
           label: snippet.name,
-          detail: `${runbook.name} — ${snippet.target === 'new-tab' ? 'new tab' : 'current tab'}${
-            snippet.server ? ` (${snippet.server})` : ''
+          detail: `${runbook.name} — ${snippet.tab === 'new-tab' ? 'new tab' : 'current tab'}${
+            snippet.target ? ` (${snippet.target})` : ''
           }`,
           aliases: [runbook.name],
           run: () => {

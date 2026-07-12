@@ -11,7 +11,7 @@ interface SidebarSnippetRowProps {
 }
 
 export function SidebarSnippetRow({ snippet, onClick, contextMenuItems }: SidebarSnippetRowProps) {
-  const destination = snippet.target === 'new-tab' ? snippet.server || 'new tab' : null
+  const destination = snippet.tab === 'new-tab' ? snippet.target || 'new tab' : null
   const menu = useContextMenu()
   const hasContextMenu = contextMenuItems && contextMenuItems.length > 0
 

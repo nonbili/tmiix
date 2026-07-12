@@ -9,6 +9,7 @@ interface SidebarSectionHeaderProps {
   title: string
   expanded: boolean
   onToggle: () => void
+  icon?: React.ReactNode
   count?: number
   color?: string
   loading?: boolean
@@ -25,6 +26,7 @@ export function SidebarSectionHeader({
   title,
   expanded,
   onToggle,
+  icon,
   count,
   color,
   loading,
@@ -49,25 +51,29 @@ export function SidebarSectionHeader({
         type="button"
         title={titleTooltip}
       >
-        <span className="mr-2 w-1.5 h-1.5 inline-flex items-center justify-center flex-shrink-0">
-          {status ? (
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${status === 'loading' ? 'animate-pulse' : ''}`}
-              style={{
-                backgroundColor:
-                  status === 'connected'
-                    ? color || 'var(--color-term-green)'
-                    : status === 'error'
-                      ? 'var(--color-term-red)'
-                      : status === 'loading'
-                        ? color || 'var(--color-accent)'
-                        : 'var(--color-foreground-subtle)',
-                boxShadow: status === 'connected' ? `0 0 6px ${color || '#3fb950'}99` : 'none',
-              }}
-              aria-label={`status: ${status}`}
-            />
-          ) : null}
-        </span>
+        {icon ? (
+          <span className="mr-2 inline-flex items-center flex-shrink-0">{icon}</span>
+        ) : (
+          <span className="mr-2 w-1.5 h-1.5 inline-flex items-center justify-center flex-shrink-0">
+            {status ? (
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${status === 'loading' ? 'animate-pulse' : ''}`}
+                style={{
+                  backgroundColor:
+                    status === 'connected'
+                      ? color || 'var(--color-term-green)'
+                      : status === 'error'
+                        ? 'var(--color-term-red)'
+                        : status === 'loading'
+                          ? color || 'var(--color-accent)'
+                          : 'var(--color-foreground-subtle)',
+                  boxShadow: status === 'connected' ? `0 0 6px ${color || '#3fb950'}99` : 'none',
+                }}
+                aria-label={`status: ${status}`}
+              />
+            ) : null}
+          </span>
+        )}
         <MiddleTruncate text={title} className="mr-1.5" style={{ color: color || undefined }} />
         {typeof count === 'number' ? (
           <span className="text-foreground-muted bg-elevated/80 border border-border/60 rounded-full px-1.5 min-w-[18px] text-center text-[10px] leading-4 tracking-normal normal-case mr-auto">

@@ -2,6 +2,8 @@ import { useValue } from '@legendapp/state/react'
 import { useEffect, useRef, useState } from 'react'
 import { getKnownServers } from '../../state/servers'
 import { closeRunbookDialog, runbookDialog$, saveRunbookDialog } from '../../state/snippets'
+import { Button } from '../button/Button'
+import { FieldLabel, Select, TextInput } from '../form/Field'
 
 export function RunbookDialog() {
   const state = useValue(runbookDialog$)
@@ -57,10 +59,10 @@ export function RunbookDialog() {
             {isEdit ? 'Edit runbook' : 'New runbook'}
           </h2>
 
-          <label className="block text-[11px] text-foreground-subtle mb-1">Name</label>
-          <input
+          <FieldLabel>Name</FieldLabel>
+          <TextInput
             ref={nameRef}
-            className="w-full mb-3 bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
+            className="mb-3"
             value={state.name}
             onChange={(event) => runbookDialog$.name.set(event.target.value)}
             onKeyDown={(event) => {
@@ -69,23 +71,23 @@ export function RunbookDialog() {
             placeholder="deploy"
           />
 
-          <label className="block text-[11px] text-foreground-subtle mb-1">Default target</label>
-          <select
-            className="w-full mb-3 bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
-            value={state.target}
-            onChange={(event) => runbookDialog$.target.set(event.target.value as 'current-tab' | 'new-tab')}
+          <FieldLabel>Tab</FieldLabel>
+          <Select
+            className="mb-3"
+            value={state.tab}
+            onChange={(event) => runbookDialog$.tab.set(event.target.value as 'current-tab' | 'new-tab')}
           >
             <option value="current-tab">Current tab</option>
             <option value="new-tab">New tab</option>
-          </select>
+          </Select>
 
-          {state.target === 'new-tab' ? (
+          {state.tab === 'new-tab' ? (
             <>
-              <label className="block text-[11px] text-foreground-subtle mb-1">Server</label>
-              <select
-                className="w-full mb-1 bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
-                value={state.server}
-                onChange={(event) => runbookDialog$.server.set(event.target.value)}
+              <FieldLabel>Target</FieldLabel>
+              <Select
+                className="mb-1"
+                value={state.target}
+                onChange={(event) => runbookDialog$.target.set(event.target.value)}
               >
                 <option value="">Local</option>
                 {knownServers.map((server) => (
@@ -93,27 +95,17 @@ export function RunbookDialog() {
                     {server.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </>
           ) : null}
 
           {error ? <div className="mt-2 text-term-red text-xs">{error}</div> : null}
 
-          <div className="mt-5 flex items-center justify-end gap-2">
-            <button
-              onClick={closeRunbookDialog}
-              className="py-2 px-4 bg-elevated hover:bg-muted border border-border rounded-[6px] text-sm text-foreground hover:text-foreground-strong transition-colors"
-              type="button"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => void submit()}
-              className="py-2 px-4 rounded-[6px] text-sm font-medium bg-accent hover:bg-accent/90 text-background border border-transparent transition-colors"
-              type="button"
-            >
+          <div className="mt-5 flex items-center justify-end gap-3">
+            <Button onClick={closeRunbookDialog}>Cancel</Button>
+            <Button variant="primary" onClick={() => void submit()}>
               {isEdit ? 'Save' : 'Create'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -10,7 +10,9 @@ import {
   snippetEditor$,
 } from '../../state/snippets'
 import { CodeTextarea } from '../CodeTextarea'
+import { Button } from '../button/Button'
 import { IconButton } from '../button/IconButton'
+import { FieldLabel, Select, TextInput } from '../form/Field'
 
 export function SnippetEditorPane() {
   const state = useValue(snippetEditor$)
@@ -73,9 +75,9 @@ export function SnippetEditorPane() {
       </div>
 
       <div className="flex-1 overflow-auto p-3">
-        <label className="block text-[11px] text-foreground-subtle mb-1">Name</label>
-        <input
-          className="w-full mb-3 bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
+        <FieldLabel>Name</FieldLabel>
+        <TextInput
+          className="mb-3"
           value={state.name}
           onChange={(event) => snippetEditor$.name.set(event.target.value)}
           placeholder="restart-api"
@@ -83,26 +85,24 @@ export function SnippetEditorPane() {
 
         <div className="flex gap-3 mb-3">
           <div className="flex-1">
-            <label className="block text-[11px] text-foreground-subtle mb-1">Target</label>
-            <select
-              className="w-full bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
-              value={state.target}
+            <FieldLabel>Tab</FieldLabel>
+            <Select
+              value={state.tab}
               onChange={(event) =>
-                snippetEditor$.target.set(event.target.value as '' | 'current-tab' | 'new-tab')
+                snippetEditor$.tab.set(event.target.value as '' | 'current-tab' | 'new-tab')
               }
             >
               <option value="">Inherit</option>
               <option value="current-tab">Current tab</option>
               <option value="new-tab">New tab</option>
-            </select>
+            </Select>
           </div>
-          {state.target === 'new-tab' ? (
+          {state.tab === 'new-tab' ? (
             <div className="flex-1">
-              <label className="block text-[11px] text-foreground-subtle mb-1">Server</label>
-              <select
-                className="w-full bg-elevated border border-border rounded-[6px] px-2.5 py-1.5 text-sm text-foreground-strong outline-0 focus:border-accent-muted"
-                value={state.server}
-                onChange={(event) => snippetEditor$.server.set(event.target.value)}
+              <FieldLabel>Target</FieldLabel>
+              <Select
+                value={state.target}
+                onChange={(event) => snippetEditor$.target.set(event.target.value)}
               >
                 <option value="">Local</option>
                 {knownServers.map((server) => (
@@ -110,7 +110,7 @@ export function SnippetEditorPane() {
                     {server.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           ) : null}
         </div>
@@ -139,24 +139,15 @@ export function SnippetEditorPane() {
 
       <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-t border-border shrink-0">
         {isEdit ? (
-          <button
-            onClick={() => void remove()}
-            className="py-1.5 px-3 rounded-[6px] text-xs text-term-red hover:bg-term-red/10 border border-transparent transition-colors"
-            type="button"
-          >
+          <Button variant="danger" onClick={() => void remove()}>
             Delete
-          </button>
+          </Button>
         ) : (
           <span />
         )}
-        <button
-          onClick={() => void save()}
-          className="py-1.5 px-3 rounded-[6px] text-xs font-medium bg-accent hover:bg-accent/90 text-background border border-transparent transition-colors"
-          type="button"
-          disabled={saving}
-        >
+        <Button variant="primary" onClick={() => void save()} disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
-        </button>
+        </Button>
       </div>
     </div>
   )

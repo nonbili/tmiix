@@ -1,5 +1,7 @@
 import { useValue } from '@legendapp/state/react'
+import { NotebookText, Plus } from 'lucide-react'
 import { main } from '../../../wailsjs/go/models'
+import { IconButton } from '../button/IconButton'
 import { useContextMenu } from '../../lib/useContextMenu'
 import {
   deleteRunbook,
@@ -34,9 +36,21 @@ export function SidebarRunbookSection({ runbook }: SidebarRunbookSectionProps) {
       <SidebarSectionHeader
         title={runbook.name}
         expanded={expanded}
-        count={runbook.snippets.length}
+        icon={<NotebookText size={12} strokeWidth={1.7} />}
         onToggle={() => toggleRunbook(runbook.name)}
         onContextMenu={menu.onContextMenu}
+        rightSlot={
+          <IconButton
+            icon={<Plus size={14} strokeWidth={1.7} />}
+            title="New snippet"
+            size={16}
+            className="opacity-0 group-hover:opacity-100 text-foreground-subtle hover:text-foreground"
+            onClick={(e) => {
+              e.stopPropagation()
+              openCreateSnippetEditor(runbook.name)
+            }}
+          />
+        }
       />
 
       {menu.open ? (
