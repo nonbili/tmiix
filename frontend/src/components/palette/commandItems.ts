@@ -118,7 +118,25 @@ export function filterCommandItems<T extends { label: string; detail: string; al
 ): T[] {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return items
-  return items.filter((item) =>
-    [item.label, item.detail, ...item.aliases].some((value) => value.toLowerCase().includes(normalized)),
-  )
+
+  const rank = (item: T): number | null => {
+    const label = item.label.toLowerCase()
+    const detail = item.detail.toLowerCase()
+    const aliases = item.aliases.map((alias) => alias.toLowerCase())
+
+    if (label === normalized) return 0
+    if (aliases.includes(normalized)) return 1
+    if (label.startsWith(normalized)) return 2
+    if (aliases.some((alias) => alias.startsWith(normalized))) return 3
+    if (label.includes(normalized)) return 4
+    if (aliases.some((alias) => alias.includes(normalized))) return 5
+    if (detail.includes(normalized)) return 6
+    return null
+  }
+
+  return items
+    .map((item, index) => ({ item, index, rank: rank(item) }))
+    .filter((entry): entry is typeof entry & { rank: number } => entry.rank !== null)
+    .sort((left, right) => left.rank - right.rank || left.index - right.index)
+    .map(({ item }) => item)
 }
