@@ -5,6 +5,7 @@ export type KeybindingAction =
   | 'palette.command'
   | 'palette.new'
   | 'sidebar.toggle'
+  | 'terminal.copy'
   | 'terminal.paste'
   | 'tab.close'
   | 'tab.cycle.next'

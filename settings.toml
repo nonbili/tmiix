@@ -20,6 +20,10 @@ ui_theme = "system"
 # a snippet. See the "Snippets" section of the docs for the folder format.
 snippets_path = ""
 
+# Copy terminal selections to the clipboard as soon as you make them, without
+# needing the terminal.copy keybinding. Set to false to only copy explicitly.
+copy_on_select = true
+
 [font]
 # Terminal font family. Keep quotes around comma-separated fallback lists.
 family = '"JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace'
@@ -52,6 +56,8 @@ letter_spacing = 0
 "palette.new"     = "Mod+T"
 # Toggle the sidebar.
 "sidebar.toggle"  = "Mod+\\"
+# Copy the terminal selection to the clipboard.
+"terminal.copy"   = "Mod+Shift+C"
 # Paste clipboard contents into the active terminal.
 "terminal.paste"  = "Mod+Shift+V"
 # Close the active tab.

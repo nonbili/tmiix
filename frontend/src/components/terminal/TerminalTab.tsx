@@ -236,7 +236,14 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
 
     terminal.attachCustomKeyEventHandler((event) => {
       if (event.type !== 'keydown') return true
-      if (matchAction(event) !== 'terminal.paste') return true
+      const action = matchAction(event)
+      if (action === 'terminal.copy') {
+        if (!terminal.hasSelection()) return true
+        event.preventDefault()
+        void ClipboardSetText(terminal.getSelection())
+        return false
+      }
+      if (action !== 'terminal.paste') return true
       event.preventDefault()
       void handleTerminalPaste(tabId, terminal)
       return false
@@ -289,6 +296,19 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       if (t) updateTabLabel(tabId, t)
     })
 
+    // Debounced so a drag-in-progress doesn't spam the clipboard bridge, and
+    // guarded so clearing the selection never wipes the clipboard.
+    let copyOnSelect = false
+    let copyOnSelectTimer: number | undefined
+    const selection = terminal.onSelectionChange(() => {
+      if (!copyOnSelect) return
+      window.clearTimeout(copyOnSelectTimer)
+      copyOnSelectTimer = window.setTimeout(() => {
+        const text = terminal.getSelection()
+        if (text) void ClipboardSetText(text)
+      }, 150)
+    })
+
     const ro = new ResizeObserver(() => sync())
     ro.observe(hostRef.current)
 
@@ -308,6 +328,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
     void GetSettings()
       .then((settings) => {
         if (disposed) return
+        copyOnSelect = settings.copyOnSelect ?? false
         terminal.options.fontFamily = settings.font?.family || DEFAULT_FONT.family
         terminal.options.fontSize = settings.font?.size || DEFAULT_FONT.size
         terminal.options.lineHeight = settings.font?.lineHeight || DEFAULT_FONT.lineHeight
@@ -334,6 +355,8 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       document.removeEventListener('mouseup', onDocMouseUp)
       data.dispose()
       title.dispose()
+      window.clearTimeout(copyOnSelectTimer)
+      selection.dispose()
       offData()
       offClosed()
       terminal.dispose()

@@ -23,6 +23,7 @@ type Settings struct {
 	Theme        string            `toml:"theme" json:"theme"`
 	UITheme      string            `toml:"ui_theme" json:"uiTheme"`
 	SnippetsPath string            `toml:"snippets_path" json:"snippetsPath"`
+	CopyOnSelect bool              `toml:"copy_on_select" json:"copyOnSelect"`
 	Font         FontSettings      `toml:"font" json:"font"`
 	Keybindings  map[string]string `toml:"keybindings" json:"keybindings"`
 }
@@ -94,6 +95,9 @@ func effectiveSettings() (Settings, error) {
 	}
 	if user.SnippetsPath != "" {
 		merged.SnippetsPath = user.SnippetsPath
+	}
+	if meta != nil && meta.IsDefined("copy_on_select") {
+		merged.CopyOnSelect = user.CopyOnSelect
 	}
 	if user.Font.Family != "" {
 		merged.Font.Family = user.Font.Family

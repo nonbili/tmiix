@@ -37,7 +37,10 @@ const GROUPS: ShortcutGroup[] = [
   },
   {
     title: 'Terminal',
-    items: [{ action: 'terminal.paste', label: 'Paste clipboard' }],
+    items: [
+      { action: 'terminal.copy', label: 'Copy selection' },
+      { action: 'terminal.paste', label: 'Paste clipboard' },
+    ],
   },
 ]
 
