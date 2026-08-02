@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func TestExtendPathAppendsMissingDirsOnly(t *testing.T) {
 func TestStartTabReplacesExistingSessionForSameTabID(t *testing.T) {
 	app := NewApp()
 	cmd1 := longRunningShell()
-	if err := app.startTab("tab-1", cmd1, false, ""); err != nil {
+	if err := app.startTab("tab-1", cmd1, false, "", false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -36,7 +37,7 @@ func TestStartTabReplacesExistingSessionForSameTabID(t *testing.T) {
 	app.mu.Unlock()
 
 	cmd2 := longRunningShell()
-	if err := app.startTab("tab-1", cmd2, false, ""); err != nil {
+	if err := app.startTab("tab-1", cmd2, false, "", false); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -75,7 +76,7 @@ func TestDetectTabSessionUnknownTab(t *testing.T) {
 
 func TestDetectTabSessionPlainShellReturnsEmpty(t *testing.T) {
 	app := NewApp()
-	if err := app.startTab("tab-shell", longRunningShell(), false, ""); err != nil {
+	if err := app.startTab("tab-shell", longRunningShell(), false, "", false); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { app.CloseTab("tab-shell") })
@@ -170,4 +171,54 @@ func waitForProcessExit(cmd *exec.Cmd, timeout time.Duration) bool {
 		time.Sleep(10 * time.Millisecond)
 	}
 	return cmd.Process.Signal(syscall.Signal(0)) != nil
+}
+
+// TestFilterRemoteTTYMarker covers the handshake that makes "kill session"
+// work on ssh tabs: the remote login shell reports its tty in an OSC marker,
+// which must be recorded and stripped from what the terminal view sees, even
+// when it arrives split across pty reads.
+func TestFilterRemoteTTYMarker(t *testing.T) {
+	app := NewApp()
+	s := &ptySession{serverName: "box"}
+
+	marker := "\033]1337;tmiix-tty=/dev/pts/7\007"
+	chunks := []string{"before" + marker[:10], marker[10:] + "after"}
+	var out []byte
+	for _, chunk := range chunks {
+		out = append(out, app.filterRemoteTTYMarker(s, []byte(chunk))...)
+	}
+
+	if string(out) != "beforeafter" {
+		t.Fatalf("forwarded output = %q, want %q", string(out), "beforeafter")
+	}
+	if s.remoteTTY != "/dev/pts/7" {
+		t.Fatalf("remoteTTY = %q, want /dev/pts/7", s.remoteTTY)
+	}
+	if !s.ttyDone {
+		t.Fatal("expected scanning to stop once the marker was found")
+	}
+}
+
+func TestFilterRemoteTTYMarkerGivesUpAfterLimit(t *testing.T) {
+	app := NewApp()
+	s := &ptySession{serverName: "box"}
+
+	noise := strings.Repeat("x", remoteTTYScanLimit+1)
+	out := app.filterRemoteTTYMarker(s, []byte(noise))
+	if string(out) != noise {
+		t.Fatalf("forwarded %d bytes, want all %d passed through", len(out), len(noise))
+	}
+	if !s.ttyDone {
+		t.Fatal("expected scanning to stop once past the byte limit")
+	}
+}
+
+func TestSessionForClientTTY(t *testing.T) {
+	out := "/dev/pts/1 other\n/dev/pts/7 repo/hibi\n"
+	if got := sessionForClientTTY(out, "/dev/pts/7"); got != "repo/hibi" {
+		t.Fatalf("sessionForClientTTY = %q, want repo/hibi", got)
+	}
+	if got := sessionForClientTTY(out, "/dev/pts/9"); got != "" {
+		t.Fatalf("sessionForClientTTY = %q, want empty for an unattached tty", got)
+	}
 }

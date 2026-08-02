@@ -4,6 +4,7 @@ import {
   canOpenTmuxHere,
   getTabs,
   openLocalShell,
+  openRemoteShell,
   openTmuxHere,
   tabs$,
   updateTabLabel,
@@ -52,6 +53,23 @@ describe('updateTabLabel session detection', () => {
     const updated = getTabs().find((t) => t.id === tab.id)
     expect(updated?.kind).toBe('session')
     expect(updated?.sessionName).toBe('mx')
+  })
+
+  // Without this, "Kill session" is unavailable on an ssh tab where the user
+  // started tmux by hand, since the tab never learns it holds a session.
+  it('promotes a remote shell tab to a remote session tab', async () => {
+    await openRemoteShell('box')
+    const tab = getTabs().at(-1)
+    if (!tab) throw new Error('expected a tab to be created')
+    detectTabSession.mockImplementation(async (tabId: string) => (tabId === tab.id ? 'hibi' : ''))
+
+    updateTabLabel(tab.id, 'hibi')
+    await flush()
+
+    const updated = getTabs().find((t) => t.id === tab.id)
+    expect(updated?.kind).toBe('remote')
+    expect(updated?.serverName).toBe('box')
+    expect(updated?.sessionName).toBe('hibi')
   })
 
   it('leaves the tab as a shell when no tmux session is attached', async () => {

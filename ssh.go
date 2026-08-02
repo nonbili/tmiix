@@ -274,7 +274,7 @@ func (a *App) AttachRemoteSession(tabId, serverName, sessionName string) error {
 	args := append(s.sshArgs(true, true), remoteCommand("tmux", "-u", "-T", tmuxClientFeatures, "attach-session", "-t", sessionName))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
-	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName)
+	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName, false /* expectTTYMarker */)
 }
 
 func (a *App) KillRemoteSession(serverName, sessionName string) error {
@@ -293,15 +293,46 @@ func (a *App) KillRemoteSession(serverName, sessionName string) error {
 	return err
 }
 
+// detectRemoteTabSession reports the tmux session attached on the remote tty
+// of an ssh-backed tab, so a session started by hand inside a remote shell
+// (or by "Open tmux Here") still becomes a real session tab. Best effort: any
+// failure — no tmux server, no clients, connection gone — means "no session".
+func (a *App) detectRemoteTabSession(serverName, remoteTTY string) (string, error) {
+	if remoteTTY == "" {
+		return "", nil
+	}
+	s, err := a.findServer(serverName)
+	if err != nil {
+		return "", err
+	}
+	args := append(s.sshArgs(false, false), remoteCommand("tmux", "list-clients", "-F", clientTTYFormat))
+	cmd := shellWrappedSSH(args)
+	cmd.Env = termEnv()
+	out, err := a.runSSHPty(cmd, serverName)
+	if err != nil {
+		return "", nil
+	}
+	return sessionForClientTTY(string(out), remoteTTY), nil
+}
+
+// remoteShellScript replaces the plain interactive ssh login with a login
+// shell that first reports its tty. Knowing the remote tty is what lets
+// DetectTabSession ask the remote tmux server which session (if any) this tab
+// is attached to — the local pty belongs to the ssh client, not to that shell.
+// It runs through /bin/sh so the syntax does not depend on the remote login
+// shell (sshd hands our command to $SHELL, which may be csh/tcsh); the inner
+// exec still lands the user in their own login shell.
+const remoteShellScript = `exec /bin/sh -c 'printf "\033]1337;tmiix-tty=%s\007" "$(tty)"; exec "${SHELL:-/bin/sh}" -l'`
+
 func (a *App) OpenRemoteShell(tabId, serverName string) error {
 	s, err := a.findServer(serverName)
 	if err != nil {
 		return err
 	}
-	args := s.sshArgs(true, true)
+	args := append(s.sshArgs(true, true), remoteShellScript)
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
-	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName)
+	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName, true /* expectTTYMarker */)
 }
 
 // runSSHPty runs a non-interactive ssh command under a pty so that passphrase

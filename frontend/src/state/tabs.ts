@@ -82,10 +82,11 @@ export async function openTmuxHere(tabId?: string) {
 const detectingTabs = new Set<string>()
 
 async function detectTabSessionWithRetry(tabId: string): Promise<string | null> {
-  // Title-change events (the only externally observable signal for a script
-  // that just ran `tmux new-session`) can fire slightly before the tmux
-  // client has actually registered itself, so retry once after a short delay.
-  for (const delay of [0, 600]) {
+  // The signals we detect on (a title change, or the switch to the alternate
+  // screen) can fire slightly before the tmux client has registered itself —
+  // by a second or more when the client is on the far side of an ssh
+  // connection — so retry a couple of times before giving up.
+  for (const delay of [0, 600, 1500]) {
     if (delay) await new Promise((resolve) => window.setTimeout(resolve, delay))
     try {
       const sessionName = await DetectTabSession(tabId)
@@ -97,10 +98,20 @@ async function detectTabSessionWithRetry(tabId: string): Promise<string | null> 
   return null
 }
 
+// Exported for the terminal view: switching to the alternate screen buffer is
+// the moment a full-screen program (a tmux client among them) takes over the
+// tab, and unlike a title change it fires *after* the session is up. Title
+// events are emitted by the shell prompt, i.e. before the command runs, so on
+// their own they miss a session started by that very command.
+export function checkTabForSession(tabId: string) {
+  void promoteShellTabIfSessionDetected(tabId)
+}
+
 async function promoteShellTabIfSessionDetected(tabId: string) {
   if (detectingTabs.has(tabId)) return
   const tab = getTabs().find((item) => item.id === tabId)
-  if (!tab || tab.kind !== 'shell' || tab.serverName || tab.sessionName) return
+  if (!tab || tab.kind !== 'shell' || tab.sessionName) return
+  const serverName = tab.serverName
 
   detectingTabs.add(tabId)
   try {
@@ -110,13 +121,16 @@ async function promoteShellTabIfSessionDetected(tabId: string) {
     const current = getTabs().find((item) => item.id === tabId)
     if (!current || current.kind !== 'shell' || current.sessionName) return
 
+    const kind = serverName ? 'remote' : 'session'
     tabs$.items.set((list) =>
-      list.map((item) =>
-        item.id === tabId ? { ...item, kind: 'session', sessionName, tmuxStarted: true } : item,
-      ),
+      list.map((item) => (item.id === tabId ? { ...item, kind, sessionName, tmuxStarted: true } : item)),
     )
-    markRecentSession(sessionName)
-    void refreshSessions()
+    if (serverName) {
+      void refreshRemoteSessions(serverName, { prompt: false }).catch(() => {})
+    } else {
+      markRecentSession(sessionName)
+      void refreshSessions()
+    }
   } finally {
     detectingTabs.delete(tabId)
   }
@@ -583,14 +597,14 @@ export function syncRemoteTabColors() {
 }
 
 export function updateTabLabel(id: string, label: string) {
-  let isLocalShell = false
+  let isShell = false
   tabs$.items.set((current) =>
     current.map((tab) => {
       if (tab.id !== id) return tab
 
       let nextLabel = label
       const isLocal = (tab.kind === 'shell' && !tab.serverName) || tab.kind === 'session'
-      isLocalShell = tab.kind === 'shell' && !tab.serverName
+      isShell = tab.kind === 'shell'
 
       if (isLocal) {
         // Strip user@host: prefix if present (common in default shell prompts)
@@ -607,7 +621,8 @@ export function updateTabLabel(id: string, label: string) {
     }),
   )
 
-  // A local shell's title just changed — it may have just started a tmux
-  // session (e.g. an external ~/bin script). Check in the background.
-  if (isLocalShell) void promoteShellTabIfSessionDetected(id)
+  // A shell tab's title just changed — it may have just started a tmux
+  // session (e.g. an external ~/bin script), locally or on the far side of an
+  // ssh tab. Check in the background.
+  if (isShell) void promoteShellTabIfSessionDetected(id)
 }

@@ -1,6 +1,14 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"os/exec"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/creack/pty"
+)
 
 func TestAddSSHServerPersistsAutoConnect(t *testing.T) {
 	configDir := t.TempDir()
@@ -53,4 +61,45 @@ func hasAdjacentArgs(args []string, left, right string) bool {
 		}
 	}
 	return false
+}
+
+// TestRemoteShellScriptReportsTTY runs remoteShellScript the way sshd does —
+// as the argument of `$SHELL -c` on a tty — and checks that the tty marker
+// survives that quoting and is understood by the filter that consumes it.
+func TestRemoteShellScriptReportsTTY(t *testing.T) {
+	for _, loginShell := range []string{"/bin/sh", "/bin/bash"} {
+		if _, err := os.Stat(loginShell); err != nil {
+			continue
+		}
+		t.Run(loginShell, func(t *testing.T) {
+			cmd := exec.Command(loginShell, "-c", remoteShellScript)
+			cmd.Env = append(os.Environ(), "SHELL="+loginShell)
+			ptmx, err := pty.Start(cmd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				_ = ptmx.Close()
+				_ = cmd.Process.Kill()
+				_, _ = cmd.Process.Wait()
+			}()
+
+			app := NewApp()
+			s := &ptySession{serverName: "box"}
+			buf := make([]byte, 4096)
+			for s.remoteTTY == "" {
+				_ = ptmx.SetReadDeadline(time.Now().Add(10 * time.Second))
+				n, rerr := ptmx.Read(buf)
+				if n > 0 {
+					app.filterRemoteTTYMarker(s, buf[:n])
+				}
+				if rerr != nil {
+					break
+				}
+			}
+			if !strings.HasPrefix(s.remoteTTY, "/dev/") {
+				t.Fatalf("remoteTTY = %q, want the shell's pty path", s.remoteTTY)
+			}
+		})
+	}
 }

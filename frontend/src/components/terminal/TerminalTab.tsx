@@ -9,7 +9,7 @@ import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../../wailsjs/r
 import { isMac, matchAction } from '../../lib/keybindings'
 import { getTheme } from '../../themes'
 import { ui$ } from '../../state/ui'
-import { canOpenTmuxHere, openTmuxHere, reconnectTab, updateTabLabel } from '../../state/tabs'
+import { canOpenTmuxHere, checkTabForSession, openTmuxHere, reconnectTab, updateTabLabel } from '../../state/tabs'
 import type { Tab } from '../../types'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { SidebarSectionMenu, type SectionMenuItem } from '../sidebar/SidebarSectionMenu'
@@ -296,6 +296,13 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       if (t) updateTabLabel(tabId, t)
     })
 
+    // A shell tab entering the alternate screen means a full-screen program
+    // just started — possibly a tmux client the app doesn't know about yet
+    // (e.g. `tmux new-session` typed by hand or run by a ~/bin script).
+    const buffer = terminal.buffer.onBufferChange((buf) => {
+      if (buf.type === 'alternate') checkTabForSession(tabId)
+    })
+
     // Debounced so a drag-in-progress doesn't spam the clipboard bridge, and
     // guarded so clearing the selection never wipes the clipboard.
     let copyOnSelect = false
@@ -355,6 +362,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       document.removeEventListener('mouseup', onDocMouseUp)
       data.dispose()
       title.dispose()
+      buffer.dispose()
       window.clearTimeout(copyOnSelectTimer)
       selection.dispose()
       offData()

@@ -26,6 +26,13 @@ type ptySession struct {
 	watchPassphrase bool
 	serverName      string
 	lineBuf         []byte
+	// remoteTTY is the tty the remote login shell runs on, reported by the
+	// marker in remoteShellScript. Guarded by App.mu; see DetectTabSession.
+	remoteTTY string
+	// Scan state for that marker; touched only by readTab.
+	ttyBuf     []byte
+	ttyScanned int
+	ttyDone    bool
 }
 
 type App struct {
@@ -184,7 +191,7 @@ func (a *App) OpenShell(tabId string) error {
 	}
 	cmd := exec.Command(shell, "-l")
 	cmd.Env = termEnv()
-	return a.startTab(tabId, cmd, false, "")
+	return a.startTab(tabId, cmd, false, "", false)
 }
 
 // tmuxClientFeatures is passed via `tmux -T` on attach so tmux advertises
@@ -197,7 +204,7 @@ const tmuxClientFeatures = "256,RGB,clipboard,ccolour,cstyle,extkeys,focus,mouse
 func (a *App) AttachSession(tabId, sessionName string) error {
 	cmd := exec.Command("tmux", "-u", "-T", tmuxClientFeatures, "attach-session", "-t", sessionName)
 	cmd.Env = termEnv()
-	return a.startTab(tabId, cmd, false, "")
+	return a.startTab(tabId, cmd, false, "", false)
 }
 
 // DetectTabSession reports the tmux session name attached inside the given
@@ -208,16 +215,28 @@ func (a *App) AttachSession(tabId, sessionName string) error {
 // against `tmux list-clients`, which reports the tty each attached client is
 // running on — the same tty as the tab's slave, since the tmux client is
 // just another process in that shell.
+// For an ssh-backed tab the local pty belongs to the ssh client, not to the
+// shell that ran tmux, so we match against the tty the remote shell reported
+// on connect (see remoteShellScript) and query the remote tmux server instead.
 func (a *App) DetectTabSession(tabId string) (string, error) {
 	a.mu.Lock()
 	s, ok := a.tabs[tabId]
+	var tty, serverName, remoteTTY string
+	if ok {
+		tty, serverName, remoteTTY = s.ttyName, s.serverName, s.remoteTTY
+	}
 	a.mu.Unlock()
-	if !ok || s.ttyName == "" {
+	if !ok {
 		return "", nil
 	}
-	tty := s.ttyName
+	if serverName != "" {
+		return a.detectRemoteTabSession(serverName, remoteTTY)
+	}
+	if tty == "" {
+		return "", nil
+	}
 
-	out, err := exec.Command("tmux", "list-clients", "-F", "#{client_tty}\t#{session_name}").Output()
+	out, err := exec.Command("tmux", "list-clients", "-F", clientTTYFormat).Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -226,17 +245,27 @@ func (a *App) DetectTabSession(tabId string) (string, error) {
 		return "", err
 	}
 
-	trimmed := strings.TrimSpace(string(out))
-	if trimmed == "" {
-		return "", nil
+	return sessionForClientTTY(string(out), tty), nil
+}
+
+// clientTTYFormat pairs each attached client's tty with its session. The
+// separator is a space rather than a tab because some tmux builds sanitize
+// control characters out of `list-clients` output (turning a tab into "_"),
+// and a tty path never contains a space.
+const clientTTYFormat = "#{client_tty} #{session_name}"
+
+func sessionForClientTTY(listClientsOutput, tty string) string {
+	trimmed := strings.TrimSpace(listClientsOutput)
+	if trimmed == "" || tty == "" {
+		return ""
 	}
 	for _, line := range strings.Split(trimmed, "\n") {
-		clientTty, sessionName, found := strings.Cut(line, "\t")
+		clientTty, sessionName, found := strings.Cut(strings.TrimSpace(line), " ")
 		if found && clientTty == tty {
-			return sessionName, nil
+			return sessionName
 		}
 	}
-	return "", nil
+	return ""
 }
 
 func (a *App) KillSession(sessionName string) error {
@@ -249,7 +278,9 @@ func (a *App) KillSession(sessionName string) error {
 	return cmd.Run()
 }
 
-func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, serverName string) error {
+// expectTTYMarker is set for tabs whose command reports the remote tty via
+// remoteShellScript, so readTab knows to scan for (and strip) that marker.
+func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, serverName string, expectTTYMarker bool) error {
 	a.mu.Lock()
 	old := a.tabs[tabId]
 	if old != nil {
@@ -302,6 +333,7 @@ func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, server
 		gen:             a.gen,
 		watchPassphrase: watchPassphrase,
 		serverName:      serverName,
+		ttyDone:         !expectTTYMarker,
 	}
 	a.tabs[tabId] = s
 	a.mu.Unlock()
@@ -367,6 +399,9 @@ func (a *App) readTab(tabId string, s *ptySession) {
 			if s.watchPassphrase {
 				data = a.filterPassphrase(tabId, s, data)
 			}
+			if !s.ttyDone {
+				data = a.filterRemoteTTYMarker(s, data)
+			}
 			if len(data) > 0 {
 				runtime.EventsEmit(a.ctx, "terminal:data:"+tabId, base64.StdEncoding.EncodeToString(data))
 			}
@@ -413,16 +448,78 @@ func (a *App) readTab(tabId string, s *ptySession) {
 var passphraseTrigger = []byte("Enter passphrase for key '")
 
 func passphraseTriggerTailLen(data []byte) int {
-	limit := len(passphraseTrigger) - 1
+	return triggerTailLen(data, passphraseTrigger)
+}
+
+// triggerTailLen returns the length of the suffix of data that is a prefix of
+// trigger, i.e. how many trailing bytes must be held back because they could
+// still turn into a full trigger once more output arrives.
+func triggerTailLen(data, trigger []byte) int {
+	limit := len(trigger) - 1
 	if len(data) < limit {
 		limit = len(data)
 	}
 	for n := limit; n > 0; n-- {
-		if bytes.Equal(data[len(data)-n:], passphraseTrigger[:n]) {
+		if bytes.Equal(data[len(data)-n:], trigger[:n]) {
 			return n
 		}
 	}
 	return 0
+}
+
+// remoteTTYMarker is the OSC sequence remoteShellScript prints on connect to
+// report the tty of the remote login shell. filterRemoteTTYMarker records the
+// path and strips the sequence so it never reaches the terminal view.
+var remoteTTYMarkerStart = []byte("\033]1337;tmiix-tty=")
+
+const remoteTTYMarkerEnd = 0x07 // BEL
+
+// remoteTTYScanLimit bounds how much output we buffer looking for the marker.
+// It is printed before the login shell execs, so it always lands in the first
+// bytes; the limit just stops us scanning forever on an older/custom setup
+// that never emits it.
+const remoteTTYScanLimit = 8192
+
+func (a *App) filterRemoteTTYMarker(s *ptySession, data []byte) []byte {
+	s.ttyBuf = append(s.ttyBuf, data...)
+	s.ttyScanned += len(data)
+
+	flush := func(keep int) []byte {
+		out := append([]byte(nil), s.ttyBuf[:len(s.ttyBuf)-keep]...)
+		s.ttyBuf = append(s.ttyBuf[:0], s.ttyBuf[len(s.ttyBuf)-keep:]...)
+		return out
+	}
+
+	idx := bytes.Index(s.ttyBuf, remoteTTYMarkerStart)
+	if idx < 0 {
+		keep := triggerTailLen(s.ttyBuf, remoteTTYMarkerStart)
+		if s.ttyScanned > remoteTTYScanLimit {
+			s.ttyDone = true
+			keep = 0
+		}
+		return flush(keep)
+	}
+
+	tail := s.ttyBuf[idx+len(remoteTTYMarkerStart):]
+	endRel := bytes.IndexByte(tail, remoteTTYMarkerEnd)
+	if endRel < 0 {
+		// Marker started but is not complete yet — forward what precedes it.
+		return flush(len(s.ttyBuf) - idx)
+	}
+
+	ttyPath := strings.TrimSpace(string(tail[:endRel]))
+	markerEnd := idx + len(remoteTTYMarkerStart) + endRel + 1
+	out := append([]byte(nil), s.ttyBuf[:idx]...)
+	out = append(out, s.ttyBuf[markerEnd:]...)
+	s.ttyBuf = nil
+	s.ttyDone = true
+
+	a.mu.Lock()
+	if strings.HasPrefix(ttyPath, "/dev/") {
+		s.remoteTTY = ttyPath
+	}
+	a.mu.Unlock()
+	return out
 }
 
 func (a *App) filterPassphrase(tabId string, s *ptySession, data []byte) []byte {
