@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { DetectTabSession, WriteTab } from '../../wailsjs/go/main/App'
+import { AttachRemoteSession, DetectTabSession, WriteTab } from '../../wailsjs/go/main/App'
 import {
   canOpenTmuxHere,
   getTabs,
   openLocalShell,
   openRemoteShell,
   openTmuxHere,
+  reconnectTab,
   tabs$,
   updateTabLabel,
 } from './tabs'
 
 const detectTabSession = DetectTabSession as unknown as ReturnType<typeof import('bun:test').mock>
+const attachRemoteSession = AttachRemoteSession as unknown as ReturnType<typeof import('bun:test').mock>
 const writeTab = WriteTab as unknown as ReturnType<typeof import('bun:test').mock>
 
 async function createLocalShellTab() {
@@ -33,6 +35,8 @@ beforeEach(() => {
   tabs$.activeTabId.set(null)
   detectTabSession.mockReset()
   detectTabSession.mockImplementation(async () => '')
+  attachRemoteSession.mockReset()
+  attachRemoteSession.mockImplementation(async () => {})
   writeTab.mockReset()
   writeTab.mockImplementation(async () => {})
 })
@@ -122,5 +126,38 @@ describe('openTmuxHere', () => {
     await openTmuxHere(tab.id)
 
     expect(writeTab).not.toHaveBeenCalled()
+  })
+})
+
+describe('manual reconnect', () => {
+  it('ignores a failure from an older reconnect cycle', async () => {
+    tabs$.items.set([
+      {
+        id: 'remote-1',
+        kind: 'remote',
+        label: 'box:work',
+        serverName: 'box',
+        sessionName: 'work',
+        color: null,
+        status: 'disconnected',
+      },
+    ])
+
+    let rejectFirst: (error: Error) => void = () => {}
+    attachRemoteSession.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectFirst = reject
+        }),
+    )
+
+    reconnectTab('remote-1')
+    reconnectTab('remote-1')
+    await flush()
+    rejectFirst(new Error('stale reconnect failed'))
+    await flush()
+
+    expect(attachRemoteSession).toHaveBeenCalledTimes(2)
+    expect(getTabs()[0].status).toBe('connected')
   })
 })

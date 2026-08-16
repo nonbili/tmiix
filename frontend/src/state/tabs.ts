@@ -490,7 +490,8 @@ async function reattachTab(tab: Tab) {
   }
 }
 
-function attemptReconnect(tab: Tab) {
+function attemptReconnect(tab: Tab, info: ReconnectInfo) {
+  if (reconnects.get(tab.id) !== info) return
   if (!getTabs().some((item) => item.id === tab.id)) {
     reconnects.delete(tab.id)
     return
@@ -500,14 +501,16 @@ function attemptReconnect(tab: Tab) {
       if (!getTabs().some((item) => item.id === tab.id)) {
         // Tab was closed mid-reconnect — tear down the session we just opened.
         void CloseTab(tab.id).catch(() => {})
-        reconnects.delete(tab.id)
+        if (reconnects.get(tab.id) === info) reconnects.delete(tab.id)
         return
       }
-      const info = reconnects.get(tab.id)
-      if (info) info.connectedAt = Date.now()
+      if (reconnects.get(tab.id) !== info) return
+      info.connectedAt = Date.now()
       setTabStatus(tab.id, 'connected')
     })
-    .catch(() => scheduleReconnect(tab))
+    .catch(() => {
+      if (reconnects.get(tab.id) === info) scheduleReconnect(tab)
+    })
 }
 
 function scheduleReconnect(tab: Tab) {
@@ -520,7 +523,7 @@ function scheduleReconnect(tab: Tab) {
   info.attempts += 1
   reconnects.set(tab.id, info)
   setTabStatus(tab.id, 'reconnecting', info.attempts)
-  info.timer = window.setTimeout(() => attemptReconnect(tab), reconnectBackoffMs(info.attempts))
+  info.timer = window.setTimeout(() => attemptReconnect(tab, info), reconnectBackoffMs(info.attempts))
 }
 
 // reconnectTab is the manual retry entry point (from the disconnected overlay).
@@ -529,9 +532,10 @@ export function reconnectTab(id: string) {
   const tab = getTabs().find((item) => item.id === id)
   if (!tab || !isReconnectable(tab)) return
   cancelReconnect(id)
-  reconnects.set(id, { attempts: 0 })
+  const info = { attempts: 0 }
+  reconnects.set(id, info)
   setTabStatus(id, 'reconnecting', 1)
-  attemptReconnect(tab)
+  attemptReconnect(tab, info)
 }
 
 function removeTabFromList(id: string) {
