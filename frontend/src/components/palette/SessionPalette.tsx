@@ -29,6 +29,7 @@ import { closePalette, setPaletteIndex, setPaletteQuery, ui$ } from '../../state
 
 export function SessionPalette() {
   const open = useValue(ui$.palette.open)
+  const askpassOpen = useValue(ui$.askpass.open)
   const mode = useValue(ui$.palette.mode)
   const query = useValue(ui$.palette.query)
   const recentSessions = useValue(sessions$.recent)
@@ -43,13 +44,26 @@ export function SessionPalette() {
   const title = mode === 'new' ? 'Attach session in new tab' : 'Switch session in current tab'
   const placeholder = mode === 'new' ? 'Attach tmux session (new tab)' : 'Switch tmux session (current tab)'
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const selectQueryOnFocusRef = useRef(true)
+
+  useEffect(() => {
+    if (!open) {
+      selectQueryOnFocusRef.current = true
+      return
+    }
+    if (askpassOpen) return
+    const id = window.setTimeout(() => {
+      inputRef.current?.focus()
+      if (selectQueryOnFocusRef.current) {
+        inputRef.current?.select()
+        selectQueryOnFocusRef.current = false
+      }
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [open, askpassOpen])
 
   useEffect(() => {
     if (!open) return
-    window.setTimeout(() => {
-      inputRef.current?.focus()
-      inputRef.current?.select()
-    }, 0)
     void refreshSessions().catch(() => {})
     for (const name of Object.keys(sessions$.remote.peek())) {
       void refreshRemoteSessions(name, { prompt: false }).catch(() => {})
@@ -58,13 +72,27 @@ export function SessionPalette() {
 
   useEffect(() => {
     if (!open) return
-    setPaletteIndex(items.length === 0 ? 0 : Math.min(selectedIndex, items.length - 1))
+    setPaletteIndex(Math.min(selectedIndex, items.length - 1))
   }, [open, selectedIndex, items.length])
 
   const handleSelect = async (item: PaletteItem) => {
     if (item.kind === 'connect-server') {
       const state = sidebar$.servers[item.serverName].peek()?.state
-      if (state !== 'loading') void loadServerSessions(item.serverName)
+      if (state !== 'loading') {
+        await loadServerSessions(item.serverName)
+        if (ui$.palette.open.peek()) {
+          // Resolve against the refreshed list, including the connect row on failure.
+          const serverIndex = getPaletteItems().findIndex(
+            (candidate) => 'serverName' in candidate && candidate.serverName === item.serverName,
+          )
+          // No surviving row means no selection; Enter must not activate a neighbor.
+          setPaletteIndex(serverIndex)
+        }
+        // The clicked server row may have been replaced by session rows.
+        if (ui$.palette.open.peek() && !ui$.askpass.open.peek()) {
+          inputRef.current?.focus()
+        }
+      }
       return
     }
     closePalette()

@@ -144,6 +144,10 @@ export function AppHotkeys() {
         return
       }
 
+      // Leave Escape and palette navigation to the authentication prompt.
+      // Global shortcuts above remain available, including modifier tracking.
+      if (ui$.askpass.open.peek()) return
+
       if (ui$.commandPalette.open.peek()) {
         const commandItems = getCommandPaletteItemCount(ui$.commandPalette.mode.peek(), ui$.commandPalette.query.peek())
 
@@ -180,7 +184,7 @@ export function AppHotkeys() {
 
       if (event.key === 'ArrowDown' || (event.ctrlKey && event.key.toLowerCase() === 'n')) {
         event.preventDefault()
-        setPaletteIndex(paletteSessions.length === 0 ? 0 : (ui$.palette.index.peek() + 1) % paletteSessions.length)
+        setPaletteIndex(paletteSessions.length === 0 ? -1 : (ui$.palette.index.peek() + 1) % paletteSessions.length)
         return
       }
 
@@ -188,8 +192,8 @@ export function AppHotkeys() {
         event.preventDefault()
         setPaletteIndex(
           paletteSessions.length === 0
-            ? 0
-            : (ui$.palette.index.peek() - 1 + paletteSessions.length) % paletteSessions.length,
+            ? -1
+            : (Math.max(0, ui$.palette.index.peek()) - 1 + paletteSessions.length) % paletteSessions.length,
         )
       }
     }
