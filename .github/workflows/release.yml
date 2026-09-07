@@ -161,6 +161,29 @@ jobs:
           mkdir -p dist
           tar -C build/bin -czf "dist/${{ matrix.artifact }}.tar.gz" tmiix
 
+      - name: stage snap payload
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -euo pipefail
+          mkdir -p snap/local
+          cp build/bin/tmiix snap/local/tmiix
+          cp metadata/flatpak/jp.nonbili.tmiix.desktop snap/local/jp.nonbili.tmiix.desktop
+          cp metadata/flatpak/jp.nonbili.tmiix.png snap/local/jp.nonbili.tmiix.png
+
+      - name: package linux snap
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: snapcore/action-build@v1
+        id: snapcraft
+        with:
+          path: .
+
+      - name: stage snap artifact
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "${{ steps.snapcraft.outputs.snap }}" "dist/${{ matrix.artifact }}.snap"
+
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -197,6 +220,28 @@ jobs:
             fi
             echo "TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
           fi
+
+      - name: find snap artifact
+        id: snap
+        working-directory: .
+        run: |
+          set -uo pipefail
+          mapfile -t snaps < <(find dist -maxdepth 1 -type f -name '*.snap')
+          if [ "${#snaps[@]}" -ne 1 ]; then
+            echo "::warning::Expected exactly one snap artifact, found ${#snaps[@]}; skipping snap publish."
+            exit 0
+          fi
+          echo "path=${snaps[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: publish snap
+        if: steps.snap.outputs.path != ''
+        continue-on-error: true
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.snap.outputs.path }}
+          release: stable
 
       - name: release
         uses: softprops/action-gh-release@v2

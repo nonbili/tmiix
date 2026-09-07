@@ -7,4 +7,10 @@ tmiix
 
 package.json.md5
 
+# Release workflow staging/outputs
+/snap/local/
+/dist/
+/*.snap
+
 .DS_Store
+
