@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Tmiix
+Comment=Tmux and SSH session manager
+Exec=tmiix
+Type=Application
+Categories=System;TerminalEmulator;
+Icon=jp.nonbili.tmiix
+Terminal=false
+StartupWMClass=tmiix
+Keywords=tmux;terminal;ssh;multiplexer;snippets;

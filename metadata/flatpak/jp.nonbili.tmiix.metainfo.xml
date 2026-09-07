@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>jp.nonbili.tmiix</id>
+
+  <name>Tmiix</name>
+  <summary>Tmux and SSH session manager</summary>
+
+  <developer id="jp.nonbili">
+    <name>Nonbili Inc.</name>
+  </developer>
+
+  <metadata_license>CC-BY-SA-4.0</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+
+  <description>
+    <p>
+      Tmiix is a terminal with built-in tmux, SSH, and snippets support. Tmiix manages local and remote tmux sessions in a beautiful, intuitive, and fast graphical user interface.
+    </p>
+    <ul>
+      <li>Manage tmux sessions on local and SSH servers</li>
+      <li>Manage shell snippets to run on local and SSH servers</li>
+      <li>Paste clipboard image directly into AI coding agent on SSH servers</li>
+      <li>UI to upload files to SSH servers</li>
+      <li>Keyboard shortcuts to quickly switch sessions</li>
+      <li>Fully customizable</li>
+    </ul>
+  </description>
+
+  <keywords>
+    <keyword>tmux</keyword>
+    <keyword>terminal</keyword>
+    <keyword>ssh</keyword>
+    <keyword>multiplexer</keyword>
+    <keyword>snippets</keyword>
+  </keywords>
+
+  <launchable type="desktop-id">jp.nonbili.tmiix.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/nonbili/tmiix/ab38498a31bf984820fa4c861db2e39d73107e75/screenshots/quick-start.png</image>
+      <caption>Quick start screen</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/nonbili/tmiix/ab38498a31bf984820fa4c861db2e39d73107e75/screenshots/snippets.png</image>
+      <caption>Snippets management</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/nonbili/tmiix/ab38498a31bf984820fa4c861db2e39d73107e75/screenshots/session-switcher.png</image>
+      <caption>Session switcher</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/nonbili/tmiix/ab38498a31bf984820fa4c861db2e39d73107e75/screenshots/tmux-session.png</image>
+      <caption>Active tmux session with tabs and split panes</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/nonbili/tmiix/ab38498a31bf984820fa4c861db2e39d73107e75/screenshots/command-palette.png</image>
+      <caption>Command palette</caption>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/nonbili/tmiix</url>
+  <url type="vcs-browser">https://github.com/nonbili/tmiix</url>
+  <url type="bugtracker">https://github.com/nonbili/tmiix/issues</url>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="0.1.4" date="2026-09-07">
+      <description>
+        <ul>
+          <li>Add snippets management with quick run and edit</li>
+          <li>Autocomplete snippets in command palette</li>
+          <li>Support copying terminal text selection</li>
+          <li>Detect tmux sessions started inside SSH shell tabs</li>
+          <li>Resizable sidebar with persistence</li>
+          <li>Improve session picker focus and reconnect handling</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.3" date="2026-07-06">
+      <description>
+        <ul>
+          <li>Support auto-connect, reconnect on resume, and file drag-and-drop upload for SSH</li>
+          <li>Add tab context menu, improve drag-and-drop, and fix manual reconnect</li>
+          <li>Add connection context menu, confirmation dialog for removing server, and upload files command</li>
+          <li>Various UI fixes, tweaks, and improved fuzzy search</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.2" date="2026-05-17">
+      <description>
+        <ul>
+          <li>Integrate with ssh-agent</li>
+          <li>Support kill-session command and open tmux session here command</li>
+          <li>Enable tmux native context menu</li>
+          <li>Fix autocomplete in session palette and various UI improvements</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.1" date="2026-05-05">
+      <description>
+        <ul>
+          <li>Fix detecting tmux path on macOS</li>
+          <li>Prevent terminal text overflow</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-05-02">
+      <description>
+        <p>Initial release with local and remote tmux session management</p>
+      </description>
+    </release>
+  </releases>
+</component>

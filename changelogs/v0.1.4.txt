@@ -1,0 +1,6 @@
+- snippets: support snippet management, execution, and autocomplete in command palette
+- terminal: support copying text selection
+- terminal: detect tmux sessions started inside SSH shell tabs
+- sidebar: resizable sidebar with persistence
+- palette: rank exact command palette matches first and fix session picker focus
+- fix: resolve stale manual reconnect callbacks and kill-session on shell tabs

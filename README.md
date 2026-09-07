@@ -1,10 +1,10 @@
 <h1 align="center">Tmiix</h1>
 <div align="center">
-  <p>The missing tmux GUI</p>
+  <p>Tmux and SSH session manager</p>
   <img src="build/linux/appicon.png" width="128" alt="Tmiix">
 </div>
 
-Tmiix manages local and remote [tmux](https://github.com/tmux/tmux) sessions in a beautiful, intuitive, fast UI.
+Tmiix is a terminal with builtin tmux, ssh and snippets support. Tmiix manages local and remote [tmux](https://github.com/tmux/tmux) sessions in a beautiful, intuitive, fast UI.
 
 [<img src="https://img.shields.io/badge/GitHub%20Releases-100000?style=for-the-badge&logo=github"
       alt="Get it on GitHub"
@@ -13,7 +13,9 @@ Tmiix manages local and remote [tmux](https://github.com/tmux/tmux) sessions in 
 ## Features
 
 - Manage tmux sessions on local and SSH servers
+- Manage shell snippets to run on local and SSH servers
 - Paste clipboard image directly into AI coding agent on SSH servers
+- UI to upload files to SSH servers
 - Keyboard shortcuts to quickly switch sessions
 - Fully customizable
 
