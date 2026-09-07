@@ -19,7 +19,17 @@ Tmiix manages local and remote [tmux](https://github.com/tmux/tmux) sessions in 
 
 ## Screenshots
 
-_(Coming soon)_
+| Quick start |
+| --- |
+| ![Quick start](screenshots/quick-start.png) |
+
+| Snippets | Session switcher |
+| --- | --- |
+| ![Snippets](screenshots/snippets.png) | ![Session switcher](screenshots/session-switcher.png) |
+
+| Tmux session | Command palette |
+| --- | --- |
+| ![Tmux session](screenshots/tmux-session.png) | ![Command palette](screenshots/command-palette.png) |
 
 ## Development
 
