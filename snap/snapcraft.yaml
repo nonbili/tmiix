@@ -24,9 +24,6 @@ parts:
       jp.nonbili.tmiix.desktop: usr/share/applications/jp.nonbili.tmiix.desktop
       jp.nonbili.tmiix.png: usr/share/icons/hicolor/512x512/apps/jp.nonbili.tmiix.png
     stage-packages:
-      - libgtk-3-0
-      - libwebkit2gtk-4.1-0
-      - libgles2
       - tmux
       - openssh-client
 

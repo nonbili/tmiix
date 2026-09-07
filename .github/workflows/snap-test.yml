@@ -1,0 +1,77 @@
+name: Snap test build
+
+# Testing only: builds the snap on the snap branch and uploads it as an
+# artifact. Never publishes to the Snap Store or cuts a release.
+
+on:
+  push:
+    branches:
+      - snap
+  workflow_dispatch:
+
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: install linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            pkg-config
+
+      - name: install wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+
+      - name: build
+        run: wails build -clean -platform linux/amd64
+
+      - name: stage snap payload
+        run: |
+          set -euo pipefail
+          mkdir -p snap/local
+          cp build/bin/tmiix snap/local/tmiix
+          cp metadata/flatpak/jp.nonbili.tmiix.desktop snap/local/jp.nonbili.tmiix.desktop
+          cp metadata/flatpak/jp.nonbili.tmiix.png snap/local/jp.nonbili.tmiix.png
+
+      - name: pack snap
+        uses: snapcore/action-build@v1
+        id: snapcraft
+        with:
+          path: .
+
+      - name: report size
+        run: |
+          set -euo pipefail
+          snap="${{ steps.snapcraft.outputs.snap }}"
+          ls -l "$snap"
+          echo "### Snap size" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$(basename "$snap")\` — $(du -h "$snap" | cut -f1) packed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Unpacked contents:" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          unsquashfs -d /tmp/sq "$snap" > /dev/null
+          du -sh /tmp/sq >> "$GITHUB_STEP_SUMMARY"
+          du -sh /tmp/sq/* | sort -rh >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: upload snap
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmiix-snap-test
+          path: ${{ steps.snapcraft.outputs.snap }}
+          if-no-files-found: error
