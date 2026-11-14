@@ -1,5 +1,5 @@
 import { observable } from '@legendapp/state'
-import { ListRemoteSessions, ListRemoteSessionsQuiet, ListSessions } from '../../wailsjs/go/main/App'
+import { ListRemoteSessions, ListRemoteSessionsQuiet, ListSessions } from '../../bindings/tmiix/app'
 import { sessionMatchesQuery, sessionMatchRank } from '../lib/search'
 import { readStoredRecentSessions, updateRecentSessions } from '../lib/storage'
 import { servers$ } from './servers'

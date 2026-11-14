@@ -11,7 +11,7 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // maxRemoteDropBytes caps drag-and-drop uploads to remote servers. The
@@ -52,10 +52,11 @@ func (a *App) PickUploadFiles() ([]string, error) {
 		}
 		dir = resolved
 	}
-	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:            "Upload Files",
-		DefaultDirectory: dir,
-	})
+	dialog := application.Get().Dialog.OpenFile().SetTitle("Upload Files")
+	if dir != "" {
+		dialog.SetDirectory(dir)
+	}
+	paths, err := dialog.PromptForMultipleSelection()
 	if err == nil && len(paths) > 0 {
 		a.mu.Lock()
 		a.lastUploadDir = filepath.Dir(paths[0])

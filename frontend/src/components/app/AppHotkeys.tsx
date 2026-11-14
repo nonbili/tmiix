@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react'
 import { useEffect } from 'react'
-import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
+import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../lib/runtime'
 import { matchAction } from '../../lib/keybindings'
 import { sessionMatchRank } from '../../lib/search'
 import { servers$ } from '../../state/servers'

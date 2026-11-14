@@ -9,7 +9,7 @@ import {
   OpenRemoteShell,
   OpenShell,
   WriteTab,
-} from '../../wailsjs/go/main/App'
+} from '../../bindings/tmiix/app'
 import type { Tab, TabStatus } from '../types'
 import type { StoredTab } from '../lib/storage'
 import { findServer } from './servers'

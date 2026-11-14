@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://v3.wails.io/schemas/wails.v3.json
+version: 3
+project:
+  name: tmiix
+  product_name: Tmiix
+  identifier: jp.nonbili.tmiix
+  version: 0.1.4
+  icon: build/appicon.png
+frontend:
+  directory: frontend
+  install: [bun, install, --frozen-lockfile]
+  build: [bun, run, build]
+  dev: [bun, run, dev]
+  bindings:
+    typescript: true
+    interfaces: false
+build:
+  output: build/bin
+  tags: [gtk3]

@@ -1,5 +1,5 @@
 import { Play, Terminal } from 'lucide-react'
-import { main } from '../../../wailsjs/go/models'
+import * as main from '../../../bindings/tmiix/models'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { IconButton } from '../button/IconButton'
 import { MiddleTruncate } from '../MiddleTruncate'

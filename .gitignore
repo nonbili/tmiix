@@ -3,6 +3,8 @@ build/bin
 frontend/dist
 frontend/node_modules
 frontend/wailsjs
+frontend/bindings
+.wails/
 tmiix
 
 package.json.md5
@@ -13,4 +15,3 @@ package.json.md5
 /*.snap
 
 .DS_Store
-

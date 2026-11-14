@@ -1,6 +1,6 @@
 import { observable } from '@legendapp/state'
-import { ListSSHConfigHosts, ListSSHServers } from '../../wailsjs/go/main/App'
-import { main } from '../../wailsjs/go/models'
+import { ListSSHConfigHosts, ListSSHServers } from '../../bindings/tmiix/app'
+import * as main from '../../bindings/tmiix/models'
 
 export const servers$ = observable({
   items: [] as main.SSHServer[],

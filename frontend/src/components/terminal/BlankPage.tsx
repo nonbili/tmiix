@@ -1,7 +1,7 @@
 import { ArrowLeftRight, Maximize, Menu, PanelLeft, Plus } from 'lucide-react'
 import { formatActionParts, type KeybindingAction } from '../../lib/keybindings'
 import { openPalette, openCommandPalette, toggleSidebar } from '../../state/ui'
-import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
+import { WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../lib/runtime'
 import { KbdShortcut } from '../KbdShortcut'
 
 const HELP_ITEMS: { action: KeybindingAction; label: string; icon: React.ReactNode; run: () => void }[] = [

@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
-import { ListThemes, ListUIThemes } from '../wailsjs/go/main/App'
+import { ListThemes, ListUIThemes } from '../bindings/tmiix/app'
 import { setTerminalThemes, type TerminalTheme } from './themes'
 import { applyUITheme, setUIThemes, type UITheme } from './uiThemes'
 import { readStoredUIThemeId } from './lib/storage'

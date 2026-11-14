@@ -1,4 +1,4 @@
-import { GetKeybindings } from '../../wailsjs/go/main/App'
+import { GetKeybindings } from '../../bindings/tmiix/app'
 
 export type KeybindingAction =
   | 'palette.switch'
@@ -147,13 +147,14 @@ type Bindings = Partial<Record<KeybindingAction, KeyChord>>
 
 let compiled: Bindings = {}
 
-function compile(raw: Record<string, string>): Bindings {
+function compile(raw: Record<string, string | undefined>): Bindings {
   if (isMac && raw['window.fullscreen'] === 'F11') {
     raw = { ...raw, 'window.fullscreen': 'Ctrl+Cmd+F' }
   }
 
   const out: Bindings = {}
   for (const [action, chord] of Object.entries(raw)) {
+    if (!chord) continue
     const parsed = parseChord(chord)
     if (parsed) out[action as KeybindingAction] = parsed
   }

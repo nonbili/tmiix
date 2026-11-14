@@ -19,7 +19,7 @@ import {
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import { PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-react'
-import { WindowIsFullscreen } from '../../../wailsjs/runtime/runtime'
+import { WindowIsFullscreen } from '../../lib/runtime'
 import { isMac } from '../../lib/keybindings'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { pickAndUploadFiles } from '../../lib/upload'

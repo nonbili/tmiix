@@ -5,8 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"sync"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type passphraseRequest struct {
@@ -40,7 +38,7 @@ func (r *passphraseRegistry) request(ctx context.Context, owner, prompt string) 
 	r.mu.Lock()
 	r.pending[req.id] = req
 	r.mu.Unlock()
-	runtime.EventsEmit(ctx, "ssh:passphrase", map[string]string{
+	emitEvent("ssh:passphrase", map[string]string{
 		"id":     req.id,
 		"prompt": prompt,
 	})

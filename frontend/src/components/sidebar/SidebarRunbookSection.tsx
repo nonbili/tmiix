@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react'
 import { NotebookText, Plus } from 'lucide-react'
-import { main } from '../../../wailsjs/go/models'
+import * as main from '../../../bindings/tmiix/models'
 import { IconButton } from '../button/IconButton'
 import { useContextMenu } from '../../lib/useContextMenu'
 import {

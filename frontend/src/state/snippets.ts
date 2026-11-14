@@ -6,8 +6,8 @@ import {
   SaveRunbook,
   SaveSnippet,
   WriteTab,
-} from '../../wailsjs/go/main/App'
-import { main } from '../../wailsjs/go/models'
+} from '../../bindings/tmiix/app'
+import * as main from '../../bindings/tmiix/models'
 import { normalizeSnippetBody, snippetCommand } from '../lib/snippets'
 import { getActiveTab, openLocalShell, openRemoteShell, tabs$ } from './tabs'
 import { requestConfirm } from './ui'

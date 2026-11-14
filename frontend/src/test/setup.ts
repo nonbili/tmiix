@@ -12,7 +12,7 @@ import { mock } from 'bun:test'
 // Everything under src/state/ ultimately imports Wails-generated bindings.
 // That directory is build-generated and gitignored, so mock it here rather
 // than depending on it existing on disk.
-mock.module('../../wailsjs/go/main/App', () => ({
+mock.module('../../bindings/tmiix/app', () => ({
   AttachRemoteSession: mock(async () => {}),
   AttachSession: mock(async () => {}),
   CloseTab: mock(async () => {}),
@@ -29,4 +29,4 @@ mock.module('../../wailsjs/go/main/App', () => ({
   WriteTab: mock(async () => {}),
 }))
 
-mock.module('../../wailsjs/go/models', () => ({ main: {} }))
+mock.module('../../bindings/tmiix/models', () => ({}))

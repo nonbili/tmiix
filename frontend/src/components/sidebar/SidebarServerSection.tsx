@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react'
 import { RefreshCw } from 'lucide-react'
-import { main } from '../../../wailsjs/go/models'
+import * as main from '../../../bindings/tmiix/models'
 import { remoteKey } from '../../lib/session'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { sessions$ } from '../../state/sessions'

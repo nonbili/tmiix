@@ -1,4 +1,4 @@
-import { ListThemes, ListUIThemes } from '../../wailsjs/go/main/App'
+import { ListThemes, ListUIThemes } from '../../bindings/tmiix/app'
 import { refreshSnippets } from '../state/snippets'
 import { setTerminalThemes, type TerminalTheme } from '../themes'
 import { setUIThemes, type UITheme } from '../uiThemes'

@@ -35,12 +35,23 @@ Tmiix is a terminal with builtin tmux, ssh and snippets support. Tmiix manages l
 
 ## Development
 
-Required: Go, [Bun](https://bun.sh/), and the [Wails CLI](https://wails.io/docs/gettingstarted/installation).
+Required: Go 1.26+, [Bun](https://bun.sh/), and [Wails v3](https://v3.wails.io/).
+On Linux, install GTK3 and WebKitGTK 4.1 development packages (for example,
+`libgtk-3-dev libwebkit2gtk-4.1-dev` on Ubuntu). This project uses Wails' `gtk3`
+compatibility backend.
+
+Install the matching CLI (the `gtk3` tag is only needed on Linux):
+
+```sh
+go install -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+```
+
+The v3.1 YAML build system currently requires `WAILS_EXP_USE_WAKE=1`.
 
 Run live development mode with:
 
 ```sh
-wails dev
+WAILS_EXP_USE_WAKE=1 wails3 dev
 ```
 
 ## Build
@@ -48,7 +59,11 @@ wails dev
 Build the production desktop app:
 
 ```sh
-wails build
+WAILS_EXP_USE_WAKE=1 wails3 build
 ```
 
 The resulting binary will be in `build/bin/`.
+
+On macOS, the build produces `build/bin/tmiix.app`.
+
+Run tests with `go test -tags gtk3 ./...` and `cd frontend && bun test`.

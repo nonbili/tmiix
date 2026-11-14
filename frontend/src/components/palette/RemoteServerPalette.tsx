@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { main } from '../../../wailsjs/go/models'
+import * as main from '../../../bindings/tmiix/models'
 import { PaletteDialog } from './PaletteDialog'
 import { PaletteList } from './PaletteList'
 import { FooterHint } from './FooterHint'

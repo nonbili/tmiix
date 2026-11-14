@@ -2,8 +2,6 @@
 
 package main
 
-import "github.com/wailsapp/wails/v2/pkg/options/linux"
-
-func platformLinuxOptions() *linux.Options {
+func platformAppIcon() []byte {
 	return nil
 }

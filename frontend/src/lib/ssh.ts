@@ -1,4 +1,4 @@
-import { main } from '../../wailsjs/go/models'
+import * as main from '../../bindings/tmiix/models'
 
 export function parseSSHCommand(input: string): main.SSHServer {
   const tokens = splitShellWords(input.trim())

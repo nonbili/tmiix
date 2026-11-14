@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { AttachRemoteSession, DetectTabSession, WriteTab } from '../../wailsjs/go/main/App'
+import { AttachRemoteSession, DetectTabSession, WriteTab } from '../../bindings/tmiix/app'
 import {
   canOpenTmuxHere,
   getTabs,

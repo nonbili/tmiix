@@ -15,7 +15,7 @@ import (
 	"syscall"
 
 	"github.com/creack/pty"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type ptySession struct {
@@ -33,6 +33,13 @@ type ptySession struct {
 	ttyBuf     []byte
 	ttyScanned int
 	ttyDone    bool
+}
+
+// Tests can exercise terminal and passphrase handling without a desktop app.
+func emitEvent(name string, data any) {
+	if app := application.Get(); app != nil {
+		app.Event.Emit(name, data)
+	}
 }
 
 type App struct {
@@ -403,7 +410,7 @@ func (a *App) readTab(tabId string, s *ptySession) {
 				data = a.filterRemoteTTYMarker(s, data)
 			}
 			if len(data) > 0 {
-				runtime.EventsEmit(a.ctx, "terminal:data:"+tabId, base64.StdEncoding.EncodeToString(data))
+				emitEvent("terminal:data:"+tabId, base64.StdEncoding.EncodeToString(data))
 			}
 		}
 		if err != nil {
@@ -438,7 +445,7 @@ func (a *App) readTab(tabId string, s *ptySession) {
 			clean = false
 		}
 	}
-	runtime.EventsEmit(a.ctx, "terminal:closed:"+tabId, clean)
+	emitEvent("terminal:closed:"+tabId, clean)
 }
 
 // filterPassphrase scans pty output for ssh passphrase prompts. When it finds

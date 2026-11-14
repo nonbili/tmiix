@@ -1,11 +1,11 @@
 import { useValue } from '@legendapp/state/react'
 import { ExternalLink, X } from 'lucide-react'
-import { BrowserOpenURL } from '../../../wailsjs/runtime/runtime'
+import { BrowserOpenURL } from '../../lib/runtime'
 import { closeAbout, ui$ } from '../../state/ui'
 import { useEffect, useState } from 'react'
 import logo from '../../assets/logo.png'
-import { GetAppInfo } from '../../../wailsjs/go/main/App'
-import { main } from '../../../wailsjs/go/models'
+import { GetAppInfo } from '../../../bindings/tmiix/app'
+import * as main from '../../../bindings/tmiix/models'
 
 export function AboutDialog() {
   const open = useValue(ui$.aboutOpen)

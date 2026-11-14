@@ -1,8 +1,8 @@
 import { useValue } from '@legendapp/state/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Eye, EyeOff, X } from 'lucide-react'
-import { CancelPassphrase, SubmitPassphrase } from '../../../wailsjs/go/main/App'
-import { EventsOn } from '../../../wailsjs/runtime/runtime'
+import { CancelPassphrase, SubmitPassphrase } from '../../../bindings/tmiix/app'
+import { EventsOn } from '../../lib/runtime'
 import { closeAskpassPrompt, setAskpassError, setAskpassSubmitting, showAskpassPrompt, ui$ } from '../../state/ui'
 
 function parsePrompt(prompt: string) {

@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react'
 import { useEffect } from 'react'
-import { GetSettings, IsTmuxAvailable } from '../../../wailsjs/go/main/App'
+import { GetSettings, IsTmuxAvailable } from '../../../bindings/tmiix/app'
 import { hasStoredThemeId, hasStoredUIThemeId, readStoredTabsState, storedTabKey } from '../../lib/storage'
 import { refreshServers, servers$ } from '../../state/servers'
 import { loadServerSessions } from '../../state/sidebar'

@@ -1,6 +1,6 @@
 import { observable } from '@legendapp/state'
-import { AddSSHServer, RemoveSSHServer } from '../../wailsjs/go/main/App'
-import { main } from '../../wailsjs/go/models'
+import { AddSSHServer, RemoveSSHServer } from '../../bindings/tmiix/app'
+import * as main from '../../bindings/tmiix/models'
 import { parseSSHCommand } from '../lib/ssh'
 import { TAB_COLORS } from '../lib/session'
 import { refreshServers, servers$ } from './servers'

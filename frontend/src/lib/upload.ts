@@ -1,4 +1,4 @@
-import { PickUploadFiles, UploadDroppedFiles } from '../../wailsjs/go/main/App'
+import { PickUploadFiles, UploadDroppedFiles } from '../../bindings/tmiix/app'
 import { dismissToast, showToast } from '../state/toasts'
 import { requestConfirm } from '../state/ui'
 import type { Tab } from '../types'
@@ -17,6 +17,7 @@ async function runUpload(tab: Tab, paths: string[], overwrite: boolean) {
     : null
   try {
     const result = await UploadDroppedFiles(tab.id, tab.kind, tab.sessionName ?? '', paths, overwrite)
+    if (!result) throw new Error('No upload result returned')
     const where = tab.serverName ? `${result.dir} on ${tab.serverName}` : result.dir
     if (result.copied.length === 1) {
       showToast('success', `Copied ${result.copied[0]} to ${where}`)

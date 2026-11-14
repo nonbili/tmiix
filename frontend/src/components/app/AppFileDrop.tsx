@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { OnFileDrop, OnFileDropOff } from '../../../wailsjs/runtime/runtime'
+import { EventsOn } from '../../lib/runtime'
 import { uploadFilesToTab } from '../../lib/upload'
 import { getActiveTab } from '../../state/tabs'
 import { showToast } from '../../state/toasts'
@@ -16,10 +16,14 @@ async function handleDrop(paths: string[]) {
 
 export function AppFileDrop() {
   useEffect(() => {
-    OnFileDrop((_x, _y, paths) => {
+    document.body.setAttribute('data-file-drop-target', '')
+    const off = EventsOn('files:dropped', (paths: string[]) => {
       void handleDrop(paths)
-    }, true)
-    return () => OnFileDropOff()
+    })
+    return () => {
+      off()
+      document.body.removeAttribute('data-file-drop-target')
+    }
   }, [])
 
   return null

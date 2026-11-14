@@ -2,10 +2,10 @@ package main
 
 import (
 	_ "embed"
-	"encoding/json"
+	"go.yaml.in/yaml/v3"
 )
 
-//go:embed wails.json
+//go:embed wails.yaml
 var wailsConfigBytes []byte
 
 var (
@@ -16,12 +16,12 @@ var (
 
 func init() {
 	var cfg struct {
-		Info struct {
-			ProductVersion string `json:"productVersion"`
-		} `json:"info"`
+		Project struct {
+			Version string `yaml:"version"`
+		} `yaml:"project"`
 	}
-	if err := json.Unmarshal(wailsConfigBytes, &cfg); err == nil && cfg.Info.ProductVersion != "" {
-		appVersion = "v" + cfg.Info.ProductVersion
+	if err := yaml.Unmarshal(wailsConfigBytes, &cfg); err == nil && cfg.Project.Version != "" {
+		appVersion = "v" + cfg.Project.Version
 	}
 }
 

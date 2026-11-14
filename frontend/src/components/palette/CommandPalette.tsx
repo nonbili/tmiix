@@ -16,7 +16,7 @@ import {
   ui$,
 } from '../../state/ui'
 import { refreshSessions } from '../../state/sessions'
-import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../../wailsjs/runtime/runtime'
+import { Quit, WindowFullscreen, WindowIsFullscreen, WindowUnfullscreen } from '../../lib/runtime'
 import { TERMINAL_THEMES } from '../../themes'
 import { SYSTEM_UI_THEME_ID, UI_THEMES } from '../../uiThemes'
 import {
@@ -33,7 +33,7 @@ import { KbdShortcut } from '../KbdShortcut'
 import { reloadSettings } from '../../lib/reloadSettings'
 import { pickAndUploadFiles } from '../../lib/upload'
 import { sessionMatchRank } from '../../lib/search'
-import { OpenSnippetsDir } from '../../../wailsjs/go/main/App'
+import { OpenSnippetsDir } from '../../../bindings/tmiix/app'
 import { runSnippet, snippets$ } from '../../state/snippets'
 import { ROOT_COMMAND_ITEMS, filterCommandItems, type CommandItemSpec } from './commandItems'
 import { FooterHint } from './FooterHint'

@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react'
 import { FolderOpen, Plus, RefreshCw } from 'lucide-react'
-import { OpenSnippetsDir } from '../../../wailsjs/go/main/App'
+import { OpenSnippetsDir } from '../../../bindings/tmiix/app'
 import { openCreateRunbookDialog, refreshSnippets, snippetEditor$, snippets$ } from '../../state/snippets'
 import { IconButton } from '../button/IconButton'
 import { RunbookDialog } from './RunbookDialog'

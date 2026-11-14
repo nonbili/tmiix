@@ -8,11 +8,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/options/mac"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -33,52 +30,45 @@ func main() {
 		fmt.Fprintf(os.Stderr, "tmiix: log setup failed: %v\n", err)
 	}
 
-	startState := options.Maximised
+	startState := application.WindowStateMaximised
 	if *fullscreen {
-		startState = options.Fullscreen
+		startState = application.WindowStateFullscreen
 	}
 
 	app := NewApp()
 
-	err := wails.Run(&options.App{
+	desktop := application.New(application.Options{
+		Name:        "tmiix",
+		Description: "The missing tmux GUI",
+		Icon:        platformAppIcon(),
+		Services:    []application.Service{application.NewService(app)},
+		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		Mac:         application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
+		OnShutdown:  func() { app.shutdown(app.ctx) },
+	})
+	app.startup(context.Background())
+	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "tmiix",
 		Width:            1280,
 		Height:           820,
 		MinWidth:         960,
 		MinHeight:        640,
-		StartHidden:      true,
-		WindowStartState: startState,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 0x0d, G: 0x11, B: 0x17, A: 1},
-		DragAndDrop: &options.DragAndDrop{
-			EnableFileDrop: true,
-			// DisableWebViewDrop must stay false: on Linux it calls
-			// gtk_drag_dest_unset on the webview, which stops GTK from
-			// delivering drag-drop signals at all. The wails JS runtime
-			// already preventDefault()s file drops to block navigation.
-			DisableWebViewDrop: false,
-		},
-		Linux:            platformLinuxOptions(),
-		Mac: &mac.Options{
-			TitleBar:             mac.TitleBarHidden(),
-			WebviewIsTransparent: true,
-			About: &mac.AboutInfo{
-				Title:   "tmiix",
-				Message: "The missing tmux GUI",
-			},
-		},
-		OnStartup: app.startup,
-		OnDomReady: func(ctx context.Context) {
-			runtime.WindowShow(ctx)
-			installNavigationGuard()
-		},
-		OnShutdown: app.shutdown,
-		Bind: []interface{}{
-			app,
+		Hidden:           true,
+		StartState:       startState,
+		BackgroundColour: application.NewRGB(0x0d, 0x11, 0x17),
+		EnableFileDrop:   true,
+		Mac: application.MacWindow{
+			TitleBar: application.MacTitleBarHidden,
 		},
 	})
+	window.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
+		installNavigationGuard()
+		window.Show()
+	})
+	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
+		desktop.Event.Emit("files:dropped", event.Context().DroppedFiles())
+	})
+	err := desktop.Run()
 	if err != nil {
 		log.Printf("wails run failed: %v", err)
 		fmt.Fprintln(os.Stderr, "Error:", err.Error())
