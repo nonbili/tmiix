@@ -214,7 +214,11 @@ func buildSnippetContent(body, tab, target string) string {
 			b.WriteString("# target: " + target + "\n")
 		}
 	}
-	b.WriteString(strings.TrimRight(body, "\n"))
+	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " \t\r")
+	}
+	b.WriteString(strings.TrimRight(strings.Join(lines, "\n"), "\n"))
 	b.WriteString("\n")
 	return b.String()
 }

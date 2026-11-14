@@ -8,6 +8,7 @@ import {
   WriteTab,
 } from '../../wailsjs/go/main/App'
 import { main } from '../../wailsjs/go/models'
+import { normalizeSnippetBody, snippetCommand } from '../lib/snippets'
 import { getActiveTab, openLocalShell, openRemoteShell, tabs$ } from './tabs'
 import { requestConfirm } from './ui'
 
@@ -29,7 +30,7 @@ export function toggleRunbook(name: string) {
 }
 
 export async function runSnippet(snippet: main.Snippet) {
-  const command = snippet.body.endsWith('\n') ? snippet.body : `${snippet.body}\n`
+  const command = snippetCommand(snippet.body)
 
   if (snippet.tab === 'new-tab') {
     const before = new Set(tabs$.items.peek().map((tab) => tab.id))
@@ -150,11 +151,12 @@ export function closeSnippetEditor() {
 
 export async function saveSnippetEditor() {
   const state = snippetEditor$.peek()
+  const body = normalizeSnippetBody(state.body)
   await SaveSnippet(
     state.runbook,
     state.oldName ?? '',
     state.name.trim(),
-    state.body,
+    body,
     state.tab,
     state.target.trim(),
   )
@@ -162,6 +164,9 @@ export async function saveSnippetEditor() {
   // Keep editing (now as an edit of the just-saved snippet) rather than
   // closing, so Save + Run-to-test can be repeated in a loop.
   snippetEditor$.oldName.set(state.name.trim())
+  if (snippetEditor$.body.peek() === state.body) {
+    snippetEditor$.body.set(body)
+  }
 }
 
 export function getRunbookDefaults(runbookName: string): { tab: 'current-tab' | 'new-tab'; target: string } {
