@@ -10,7 +10,7 @@ export type SectionMenuItem =
 interface Props {
   items: SectionMenuItem[]
   position: { x: number; y: number }
-  innerRef: React.RefObject<HTMLDivElement>
+  innerRef: React.RefObject<HTMLDivElement | null>
   onClose: () => void
 }
 
