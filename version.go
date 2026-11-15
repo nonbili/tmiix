@@ -5,7 +5,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-//go:embed wails.yaml
+//go:embed build/config.yml
 var wailsConfigBytes []byte
 
 var (
@@ -16,12 +16,12 @@ var (
 
 func init() {
 	var cfg struct {
-		Project struct {
+		Info struct {
 			Version string `yaml:"version"`
-		} `yaml:"project"`
+		} `yaml:"info"`
 	}
-	if err := yaml.Unmarshal(wailsConfigBytes, &cfg); err == nil && cfg.Project.Version != "" {
-		appVersion = "v" + cfg.Project.Version
+	if err := yaml.Unmarshal(wailsConfigBytes, &cfg); err == nil && cfg.Info.Version != "" {
+		appVersion = "v" + cfg.Info.Version
 	}
 }
 

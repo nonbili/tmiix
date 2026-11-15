@@ -17,7 +17,7 @@ parts:
     source: snap/local
     override-build: |
       craftctl default
-      version="$(sed -n 's/^  version: //p' "$CRAFT_PROJECT_DIR/wails.yaml")"
+      version="$(sed -n 's/^  version: "\(.*\)"/\1/p' "$CRAFT_PROJECT_DIR/build/config.yml")"
       craftctl set version="$version"
     organize:
       tmiix: bin/tmiix

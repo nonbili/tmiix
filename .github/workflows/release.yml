@@ -26,8 +26,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    env:
-      WAILS_EXP_USE_WAKE: '1'
 
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +95,7 @@ jobs:
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
 
       - name: build
-        run: wails3 build --targets ${{ matrix.platform }}
+        run: wails3 build
 
       - name: build notarized mac dmg
         if: startsWith(matrix.os, 'macos')
@@ -208,7 +206,7 @@ jobs:
 
       - name: prepare release
         run: |
-          VER=$(sed -n 's/^  version: //p' wails.yaml)
+          VER=$(sed -n 's/^  version: "\(.*\)"/\1/p' build/config.yml)
           sed -i "s/{VER}/$VER/g" changelogs/template.txt
           cat changelogs/template.txt changelogs/v$VER.txt > note.txt
 
@@ -217,7 +215,7 @@ jobs:
             echo "TAG=$WAILS_TAG" >> "$GITHUB_ENV"
           else
             if [ "$GITHUB_REF_NAME" != "$WAILS_TAG" ]; then
-              echo "Tag $GITHUB_REF_NAME does not match wails.yaml version $WAILS_TAG."
+              echo "Tag $GITHUB_REF_NAME does not match build/config.yml version $WAILS_TAG."
               exit 1
             fi
             echo "TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"

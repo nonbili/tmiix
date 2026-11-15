@@ -5,6 +5,7 @@ frontend/node_modules
 frontend/wailsjs
 frontend/bindings
 .wails/
+.task/
 tmiix
 
 package.json.md5

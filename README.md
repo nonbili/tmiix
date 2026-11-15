@@ -46,12 +46,14 @@ Install the matching CLI (the `gtk3` tag is only needed on Linux):
 go install -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
 ```
 
-The v3.1 YAML build system currently requires `WAILS_EXP_USE_WAKE=1`.
+Build and development commands use Wails' standard Taskfile tooling. No
+experimental build-system environment variables are required. Application metadata
+(including the version) lives in `build/config.yml`.
 
 Run live development mode with:
 
 ```sh
-WAILS_EXP_USE_WAKE=1 wails3 dev
+wails3 dev
 ```
 
 ## Build
@@ -59,7 +61,7 @@ WAILS_EXP_USE_WAKE=1 wails3 dev
 Build the production desktop app:
 
 ```sh
-WAILS_EXP_USE_WAKE=1 wails3 build
+wails3 build
 ```
 
 The resulting binary will be in `build/bin/`.

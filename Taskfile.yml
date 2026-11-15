@@ -1,0 +1,62 @@
+version: '3'
+
+vars:
+  APP_NAME: tmiix
+  BIN_DIR: build/bin
+  DEV: '{{.DEV | default "false"}}'
+  VITE_PORT: '{{.WAILS_VITE_PORT | default "9245"}}'
+  BUILD_TAGS: '{{if eq OS "linux"}}gtk3,{{end}}{{if eq .DEV "true"}}dev{{else}}production{{end}}{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}}'
+  BUILD_FLAGS: '-tags {{.BUILD_TAGS}} -buildvcs=false {{if ne .DEV "true"}}-trimpath -ldflags="-s -w"{{end}}'
+
+tasks:
+  build:
+    summary: Build the desktop app for the current platform
+    cmds:
+      - task: common:install:frontend
+      - task: common:generate:bindings
+      - task: common:build:frontend
+      - go build {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}
+      - task: '{{if eq OS "darwin"}}darwin:bundle{{else}}build:done{{end}}'
+
+  build:done:
+    internal: true
+    cmds: []
+
+  common:install:frontend:
+    dir: frontend
+    cmds:
+      - bun install --frozen-lockfile
+
+  common:generate:bindings:
+    cmds:
+      - wails3 generate bindings -ts -f '-tags {{.BUILD_TAGS}}'
+
+  common:build:frontend:
+    dir: frontend
+    cmds:
+      - bun run build
+
+  common:dev:frontend:
+    deps: [common:install:frontend]
+    dir: frontend
+    cmds:
+      - bun run dev --host 127.0.0.1 --port {{.VITE_PORT}} --strictPort
+
+  darwin:bundle:
+    internal: true
+    platforms: [darwin]
+    vars:
+      VERSION:
+        sh: >-
+          sed -n 's/^  version: "\(.*\)"/\1/p' build/config.yml
+    cmds:
+      - wails3 generate icons -input build/appicon.png -macfilename build/bin/icons.icns -windowsfilename build/bin/icon.ico
+      - mkdir -p {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources
+      - cp {{.BIN_DIR}}/{{.APP_NAME}} {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS/
+      - cp {{.BIN_DIR}}/icons.icns {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources/
+      - sed 's/APP_VERSION/{{.VERSION}}/g' build/darwin/Info.plist > {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Info.plist
+      - codesign --force --deep --sign - {{.BIN_DIR}}/{{.APP_NAME}}.app
+
+  run:
+    cmds:
+      - '{{if eq OS "darwin"}}{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS/{{.APP_NAME}}{{else}}{{.BIN_DIR}}/{{.APP_NAME}}{{end}}'

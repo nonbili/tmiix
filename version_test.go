@@ -8,17 +8,17 @@ import (
 
 func TestVersionFromWailsManifest(t *testing.T) {
 	var config struct {
-		Project struct {
+		Info struct {
 			Version string `yaml:"version"`
-		} `yaml:"project"`
+		} `yaml:"info"`
 	}
 	if err := yaml.Unmarshal(wailsConfigBytes, &config); err != nil {
 		t.Fatal(err)
 	}
-	if config.Project.Version == "" {
-		t.Fatal("project.version is missing from wails.yaml")
+	if config.Info.Version == "" {
+		t.Fatal("info.version is missing from build/config.yml")
 	}
-	if want := "v" + config.Project.Version; appVersion != want {
+	if want := "v" + config.Info.Version; appVersion != want {
 		t.Fatalf("appVersion = %q, want %q", appVersion, want)
 	}
 }
