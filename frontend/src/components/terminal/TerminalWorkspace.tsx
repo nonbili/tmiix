@@ -8,6 +8,9 @@ export function TerminalWorkspace() {
   const tabs = useValue(tabs$.items)
   const activeTabId = useValue(tabs$.activeTabId)
   const themeId = useValue(ui$.themeId)
+  // These panels overlap, so their DOM order need not follow the tab bar.
+  // Keep it stable: moving a live xterm host can blank its renderer and lose focus.
+  const terminalTabs = [...tabs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
   return (
     <main className="flex flex-col bg-background min-w-0 overflow-hidden flex-1">
@@ -16,7 +19,7 @@ export function TerminalWorkspace() {
         style={{ background: 'var(--terminal-bg)' }}
       >
         {tabs.length === 0 && <BlankPage />}
-        {tabs.map((tab) => (
+        {terminalTabs.map((tab) => (
           <TerminalTab
             key={tab.id}
             tab={tab}
