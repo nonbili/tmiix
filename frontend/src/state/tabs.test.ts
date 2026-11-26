@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { AttachRemoteSession, DetectTabSession, WriteTab } from '../../bindings/tmiix/app'
 import {
   canOpenTmuxHere,
+  closeTab,
   getTabs,
+  handleTabClosedFromBackend,
+  handleTabReadyFromBackend,
   openLocalShell,
   openRemoteShell,
   openTmuxHere,
@@ -42,8 +45,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  tabs$.items.set([])
-  tabs$.activeTabId.set(null)
+  for (const tab of getTabs()) closeTab(tab.id)
 })
 
 describe('updateTabLabel session detection', () => {
@@ -130,7 +132,7 @@ describe('openTmuxHere', () => {
 })
 
 describe('manual reconnect', () => {
-  it('ignores a failure from an older reconnect cycle', async () => {
+  it('reattaches to the same tmux session after automatic retries run out', async () => {
     tabs$.items.set([
       {
         id: 'remote-1',
@@ -139,25 +141,27 @@ describe('manual reconnect', () => {
         serverName: 'box',
         sessionName: 'work',
         color: null,
-        status: 'disconnected',
       },
     ])
 
-    let rejectFirst: (error: Error) => void = () => {}
-    attachRemoteSession.mockImplementationOnce(
-      () =>
-        new Promise<void>((_resolve, reject) => {
-          rejectFirst = reject
-        }),
-    )
+    handleTabClosedFromBackend('remote-1', false)
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await flush()
+      expect(attachRemoteSession).toHaveBeenCalledTimes(attempt)
+      expect(getTabs()[0]).toMatchObject({ status: 'reconnecting', reconnectAttempt: attempt })
+      handleTabClosedFromBackend('remote-1', attempt === 1)
+    }
+    expect(getTabs()[0].status).toBe('disconnected')
 
     reconnectTab('remote-1')
     reconnectTab('remote-1')
     await flush()
-    rejectFirst(new Error('stale reconnect failed'))
-    await flush()
+    expect(attachRemoteSession).toHaveBeenCalledTimes(6)
+    expect(attachRemoteSession).toHaveBeenLastCalledWith('remote-1', 'box', 'work')
+    expect(getTabs()[0]).toMatchObject({ status: 'reconnecting', reconnectAttempt: 1 })
 
-    expect(attachRemoteSession).toHaveBeenCalledTimes(2)
+    handleTabReadyFromBackend('remote-1')
     expect(getTabs()[0].status).toBe('connected')
+    expect(getTabs()[0].reconnectAttempt).toBeUndefined()
   })
 })

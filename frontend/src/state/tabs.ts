@@ -309,6 +309,7 @@ export async function switchActiveTabRemote(serverName: string, sessionName: str
   const server = findServer(serverName)
   const oldId = activeTab.id
   const newId = nextSessionTabId('remote', serverName, sessionName)
+  cancelReconnect(oldId)
   tabs$.items.set((current) =>
     current.map((tab) =>
       tab.id === oldId
@@ -476,7 +477,7 @@ function setTabStatus(id: string, status: TabStatus | undefined, attempt?: numbe
 
 function cancelReconnect(id: string) {
   const info = reconnects.get(id)
-  if (info?.timer) window.clearTimeout(info.timer)
+  if (info?.timer !== undefined) window.clearTimeout(info.timer)
   reconnects.delete(id)
 }
 
@@ -492,10 +493,12 @@ async function reattachTab(tab: Tab) {
 
 function attemptReconnect(tab: Tab, info: ReconnectInfo) {
   if (reconnects.get(tab.id) !== info) return
+  info.timer = undefined
   if (!getTabs().some((item) => item.id === tab.id)) {
     reconnects.delete(tab.id)
     return
   }
+  const attempt = info.attempts
   reattachTab(tab)
     .then(() => {
       if (!getTabs().some((item) => item.id === tab.id)) {
@@ -504,22 +507,21 @@ function attemptReconnect(tab: Tab, info: ReconnectInfo) {
         if (reconnects.get(tab.id) === info) reconnects.delete(tab.id)
         return
       }
-      if (reconnects.get(tab.id) !== info) return
-      info.connectedAt = Date.now()
-      setTabStatus(tab.id, 'connected')
     })
     .catch(() => {
-      if (reconnects.get(tab.id) === info) scheduleReconnect(tab)
+      if (reconnects.get(tab.id) === info && info.attempts === attempt) scheduleReconnect(tab)
     })
 }
 
 function scheduleReconnect(tab: Tab) {
   const info = reconnects.get(tab.id) ?? { attempts: 0 }
+  if (info.timer !== undefined) return
   if (info.attempts >= MAX_RECONNECT_ATTEMPTS) {
     reconnects.set(tab.id, info)
     setTabStatus(tab.id, 'disconnected')
     return
   }
+  info.connectedAt = undefined
   info.attempts += 1
   reconnects.set(tab.id, info)
   setTabStatus(tab.id, 'reconnecting', info.attempts)
@@ -530,12 +532,20 @@ function scheduleReconnect(tab: Tab) {
 // It resets the retry budget and attempts immediately.
 export function reconnectTab(id: string) {
   const tab = getTabs().find((item) => item.id === id)
-  if (!tab || !isReconnectable(tab)) return
+  if (tab?.status !== 'disconnected' || !isReconnectable(tab)) return
   cancelReconnect(id)
-  const info = { attempts: 0 }
+  const info = { attempts: 1 }
   reconnects.set(id, info)
   setTabStatus(id, 'reconnecting', 1)
   attemptReconnect(tab, info)
+}
+
+export function handleTabReadyFromBackend(id: string) {
+  const info = reconnects.get(id)
+  const tab = getTabs().find((item) => item.id === id)
+  if (!info || info.timer !== undefined || tab?.status !== 'reconnecting') return
+  info.connectedAt = Date.now()
+  setTabStatus(id, 'connected')
 }
 
 function removeTabFromList(id: string) {
@@ -559,10 +569,10 @@ export function handleTabClosedFromBackend(id: string, clean = true) {
     return
   }
 
-  // An unexpected drop on a remote tab → try to bring it back.
-  if (!clean && isReconnectable(tab)) {
+  // A process ending before it reported readiness is a failed reconnect.
+  if ((!clean || tab.status === 'reconnecting') && isReconnectable(tab)) {
     const info = reconnects.get(id)
-    if (info?.connectedAt && Date.now() - info.connectedAt > STABLE_CONNECTION_MS) {
+    if (info?.connectedAt !== undefined && Date.now() - info.connectedAt > STABLE_CONNECTION_MS) {
       // Was stable for a while; start a fresh retry budget.
       cancelReconnect(id)
     }

@@ -156,7 +156,7 @@ func (a *App) findServer(name string) (*SSHServer, error) {
 func (s *SSHServer) sshArgs(interactive, promptPassphrase bool) []string {
 	args := []string{}
 	if interactive {
-		args = append(args, "-tt")
+		args = append(args, "-tt", "-o", "ConnectTimeout=15")
 	} else {
 		// Limit to pubkey so the only interactive prompt we might hit is a
 		// passphrase for a locked key — which we intercept via the pty.
@@ -271,10 +271,10 @@ func (a *App) AttachRemoteSession(tabId, serverName, sessionName string) error {
 	if err != nil {
 		return err
 	}
-	args := append(s.sshArgs(true, true), remoteCommand("tmux", "-u", "-T", tmuxClientFeatures, "attach-session", "-t", sessionName))
+	args := append(s.sshArgs(true, true), remoteAttachCommand(sessionName))
 	cmd := shellWrappedSSH(args)
 	cmd.Env = termEnv()
-	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName, false /* expectTTYMarker */)
+	return a.startTab(tabId, cmd, true /* watchPassphrase */, serverName, true /* expectTTYMarker */)
 }
 
 func (a *App) KillRemoteSession(serverName, sessionName string) error {
@@ -322,7 +322,15 @@ func (a *App) detectRemoteTabSession(serverName, remoteTTY string) (string, erro
 // It runs through /bin/sh so the syntax does not depend on the remote login
 // shell (sshd hands our command to $SHELL, which may be csh/tcsh); the inner
 // exec still lands the user in their own login shell.
-const remoteShellScript = `exec /bin/sh -c 'printf "\033]1337;tmiix-tty=%s\007" "$(tty)"; exec "${SHELL:-/bin/sh}" -l'`
+const remoteTTYReport = `printf "\033]1337;tmiix-tty=%s\007" "$(tty)"`
+const remoteShellScript = `exec /bin/sh -c '` + remoteTTYReport + `; exec "${SHELL:-/bin/sh}" -l'`
+
+func remoteAttachCommand(sessionName string) string {
+	// Report readiness after SSH reaches the server and tmux finds the session.
+	script := `tmux has-session -t "$1" || exit $?; ` + remoteTTYReport + `; exec ` +
+		remoteCommand("tmux", "-u", "-T", tmuxClientFeatures, "attach-session") + ` -t "$1"`
+	return remoteCommand("/bin/sh", "-c", script, "sh", sessionName)
+}
 
 func (a *App) OpenRemoteShell(tabId, serverName string) error {
 	s, err := a.findServer(serverName)

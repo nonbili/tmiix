@@ -26,8 +26,8 @@ type ptySession struct {
 	watchPassphrase bool
 	serverName      string
 	lineBuf         []byte
-	// remoteTTY is the tty the remote login shell runs on, reported by the
-	// marker in remoteShellScript. Guarded by App.mu; see DetectTabSession.
+	// remoteTTY is the tty on the server, reported by the marker in
+	// remoteTTYReport. Guarded by App.mu; see DetectTabSession.
 	remoteTTY string
 	// Scan state for that marker; touched only by readTab.
 	ttyBuf     []byte
@@ -286,7 +286,7 @@ func (a *App) KillSession(sessionName string) error {
 }
 
 // expectTTYMarker is set for tabs whose command reports the remote tty via
-// remoteShellScript, so readTab knows to scan for (and strip) that marker.
+// remoteTTYReport, so readTab knows to scan for (and strip) that marker.
 func (a *App) startTab(tabId string, cmd *exec.Cmd, watchPassphrase bool, serverName string, expectTTYMarker bool) error {
 	a.mu.Lock()
 	old := a.tabs[tabId]
@@ -408,6 +408,12 @@ func (a *App) readTab(tabId string, s *ptySession) {
 			}
 			if !s.ttyDone {
 				data = a.filterRemoteTTYMarker(s, data)
+				a.mu.Lock()
+				ready := a.tabs[tabId] == s && s.remoteTTY != ""
+				a.mu.Unlock()
+				if ready {
+					emitEvent("terminal:ready:"+tabId, nil)
+				}
 			}
 			if len(data) > 0 {
 				emitEvent("terminal:data:"+tabId, base64.StdEncoding.EncodeToString(data))
@@ -439,13 +445,12 @@ func (a *App) readTab(tabId string, s *ptySession) {
 	// this to decide whether to auto-reconnect remote tabs. We only reap here
 	// when we still own the session; a concurrent CloseTab (a user-initiated
 	// close) reaps it itself and is always treated as clean.
-	clean := true
-	if mine {
-		if werr := s.cmd.Wait(); werr != nil {
-			clean = false
-		}
+	werr := s.cmd.Wait()
+	_ = s.ptmx.Close()
+	if werr != nil && s.serverName != "" {
+		log.Printf("remote terminal exited tab=%s err=%v", tabId, werr)
 	}
-	emitEvent("terminal:closed:"+tabId, clean)
+	emitEvent("terminal:closed:"+tabId, werr == nil)
 }
 
 // filterPassphrase scans pty output for ssh passphrase prompts. When it finds

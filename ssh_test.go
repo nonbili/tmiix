@@ -54,6 +54,48 @@ func TestSSHArgsPromptingNonInteractiveDoesNotUseBatchMode(t *testing.T) {
 	}
 }
 
+func TestRemoteAttachCommandReportsTTYOnlyForAnExistingSession(t *testing.T) {
+	dir := t.TempDir()
+	script := `#!/bin/sh
+[ "$1" != "-u" ] || shift 3
+[ "$2" = "-t" ] && [ "$3" = "project's work" ] || exit 2
+case "$1" in
+  has-session) exit "$TMUX_HAS_SESSION_STATUS" ;;
+  attach-session) printf 'attached\n' ;;
+  *) exit 2 ;;
+esac
+`
+	if err := os.WriteFile(dir+"/tmux", []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	command := remoteAttachCommand("project's work")
+
+	t.Setenv("TMUX_HAS_SESSION_STATUS", "0")
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ptmx.Close()
+	defer tty.Close()
+	cmd := exec.Command("/bin/sh", "-c", command)
+	cmd.Stdin = tty
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("attach failed: %v, output %q", err, output)
+	}
+	if !strings.Contains(string(output), "\033]1337;tmiix-tty=/dev/") ||
+		!strings.HasSuffix(string(output), "\007attached\n") {
+		t.Fatalf("expected tty marker followed by attach output, got %q", output)
+	}
+
+	t.Setenv("TMUX_HAS_SESSION_STATUS", "1")
+	out, err := exec.Command("/bin/sh", "-c", command).CombinedOutput()
+	if exitErr, ok := err.(*exec.ExitError); !ok || exitErr.ExitCode() != 1 || len(out) != 0 {
+		t.Fatalf("expected failure without a tty marker, got %v and output %q", err, out)
+	}
+}
+
 func hasAdjacentArgs(args []string, left, right string) bool {
 	for i := 0; i+1 < len(args); i++ {
 		if args[i] == left && args[i+1] == right {

@@ -9,7 +9,7 @@ import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../lib/runtime'
 import { isMac, matchAction } from '../../lib/keybindings'
 import { getTheme } from '../../themes'
 import { ui$ } from '../../state/ui'
-import { canOpenTmuxHere, checkTabForSession, openTmuxHere, reconnectTab, updateTabLabel } from '../../state/tabs'
+import { canOpenTmuxHere, checkTabForSession, handleTabReadyFromBackend, openTmuxHere, reconnectTab, updateTabLabel } from '../../state/tabs'
 import type { Tab } from '../../types'
 import { useContextMenu } from '../../lib/useContextMenu'
 import { SidebarSectionMenu, type SectionMenuItem } from '../sidebar/SidebarSectionMenu'
@@ -161,6 +161,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
   const commandPaletteOpen = useValue(ui$.commandPalette.open)
   const remotePaletteOpen = useValue(ui$.remotePalette.open)
   const overlayOpen = paletteOpen || commandPaletteOpen || remotePaletteOpen
+  const disconnected = tab.status === 'disconnected'
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -337,6 +338,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
     const offClosed = EventsOn(`terminal:closed:${tabId}`, (clean: boolean) => {
       onClosedRef.current(clean ?? true)
     })
+    const offReady = EventsOn(`terminal:ready:${tabId}`, () => handleTabReadyFromBackend(tabId))
 
     window.setTimeout(sync, 50)
 
@@ -376,6 +378,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       selection.dispose()
       offData()
       offClosed()
+      offReady()
       terminal.dispose()
       termRef.current = null
       fitRef.current = null
@@ -388,8 +391,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
   }, [themeId])
 
   useEffect(() => {
-    if (!active) return
-    if (overlayOpen) return
+    if (!active || overlayOpen || disconnected) return
     const id = window.setTimeout(() => {
       const fit = fitRef.current
       const term = termRef.current
@@ -405,13 +407,13 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       term?.focus()
     }, 0)
     return () => window.clearTimeout(id)
-  }, [active, tabId, overlayOpen])
+  }, [active, tabId, overlayOpen, disconnected])
 
   // Clicking app chrome (sidebar, tab bar, buttons) steals focus from xterm.
   // Hand it back once the click settles, unless the click landed in something
   // that legitimately wants keyboard focus (inputs, dialogs, menus).
   useEffect(() => {
-    if (!active || overlayOpen) return
+    if (!active || overlayOpen || disconnected) return
     let timer: number | undefined
     const onClick = (event: MouseEvent) => {
       const host = hostRef.current
@@ -430,7 +432,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       document.removeEventListener('click', onClick)
       window.clearTimeout(timer)
     }
-  }, [active, overlayOpen])
+  }, [active, overlayOpen, disconnected])
 
   // After a reconnect re-attaches, the new pty starts at a default size; nudge
   // a resize so tmux/the remote shell repaints at the real terminal dimensions.
@@ -444,10 +446,10 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
         const d = fit.proposeDimensions()
         if (d) void ResizeTab(tabId, d.cols, d.rows)
       }
-      if (active) term?.focus()
+      if (active && !overlayOpen) term?.focus()
     }, 50)
     return () => window.clearTimeout(id)
-  }, [tab.status, tabId, active])
+  }, [tab.status, tabId, active, overlayOpen])
 
   const contextItems: SectionMenuItem[] = canOpenTmuxHere(tab)
     ? [{ kind: 'button', label: 'Open tmux session here', onClick: () => void openTmuxHere(tab.id) }]
@@ -466,36 +468,27 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       className={`absolute inset-0 ${active ? '' : 'invisible pointer-events-none'}`}
       onContextMenu={handleContextMenu}
     >
-      <div ref={hostRef} className="terminal-host absolute inset-0 overflow-hidden" />
-      {tab.status === 'reconnecting' || tab.status === 'disconnected' ? (
+      <div ref={hostRef} inert={disconnected} className="terminal-host absolute inset-0 isolate overflow-hidden" />
+      {tab.status === 'reconnecting' ? (
+        <div role="status" className="pointer-events-none absolute top-3 right-3 flex items-center gap-2 rounded-lg border border-border bg-surface/95 px-3 py-2 text-sm text-foreground shadow-lg">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-border-strong border-t-transparent" />
+          Reconnecting… {tab.reconnectAttempt ? `(attempt ${tab.reconnectAttempt})` : ''}
+        </div>
+      ) : disconnected ? (
         <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface/95 px-6 py-5 text-center shadow-lg">
-            {tab.status === 'reconnecting' ? (
-              <>
-                <span className="w-5 h-5 rounded-full border-2 border-border-strong border-t-transparent animate-spin" />
-                <div className="text-sm text-foreground">
-                  Reconnecting…
-                  {tab.reconnectAttempt ? (
-                    <span className="text-foreground-muted"> (attempt {tab.reconnectAttempt})</span>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-sm text-foreground-strong">Connection lost</div>
-                <div className="text-xs text-foreground-muted max-w-[240px]">
-                  Couldn't reach {tab.serverName ?? 'the server'} after several attempts.
-                </div>
-                <button
-                  className="mt-1 inline-flex items-center justify-center rounded-[6px] border border-accent-muted/60 bg-accent-soft px-3 py-1.5 text-xs text-foreground-strong hover:bg-accent-soft/80 transition-colors"
-                  style={{ '--wails-draggable': 'no-drag' } as any}
-                  onClick={() => reconnectTab(tabId)}
-                  type="button"
-                >
-                  Reconnect
-                </button>
-              </>
-            )}
+            <div className="text-sm text-foreground-strong">Connection lost</div>
+            <div className="text-xs text-foreground-muted max-w-[240px]">
+              Couldn't reconnect to {tab.serverName ?? 'the server'}.
+            </div>
+            <button
+              className="mt-1 inline-flex items-center justify-center rounded-[6px] border border-accent-muted/60 bg-accent-soft px-3 py-1.5 text-xs text-foreground-strong hover:bg-accent-soft/80 transition-colors"
+              style={{ '--wails-draggable': 'no-drag' } as any}
+              onClick={() => reconnectTab(tabId)}
+              type="button"
+            >
+              Reconnect
+            </button>
           </div>
         </div>
       ) : null}
