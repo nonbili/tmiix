@@ -20,6 +20,7 @@ export function SidebarSectionMenu({ items, position, innerRef, onClose }: Props
   return (
     <div
       ref={innerRef}
+      role="menu"
       className="fixed z-50 flex min-w-[144px] flex-col gap-1 rounded-[6px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur"
       style={{ left: position.x, top: position.y }}
     >

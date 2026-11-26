@@ -65,7 +65,7 @@ export function TopBarMenu() {
         onClick={() => setOpen((v) => !v)}
       />
       {open ? (
-        <div className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[216px] rounded-[8px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] animate-in slide-in-from-top-2 duration-150">
+        <div role="menu" className="absolute top-[calc(100%+6px)] right-0 z-40 min-w-[216px] rounded-[8px] border border-border/90 bg-elevated/98 p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)] animate-in slide-in-from-top-2 duration-150">
           <MenuItem
             icon={<Palette size={13} strokeWidth={1.7} />}
             label="Terminal theme"

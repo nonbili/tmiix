@@ -133,6 +133,15 @@ async function handlePasteEvent(tabId: string, terminal: Terminal, event: Clipbo
   }
 }
 
+function isTextEntry(el: Element | null): boolean {
+  if (!el) return false
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return true
+  if (el instanceof HTMLInputElement) {
+    return !['button', 'checkbox', 'radio', 'submit', 'reset', 'range', 'color', 'file'].includes(el.type)
+  }
+  return (el as HTMLElement).isContentEditable === true
+}
+
 interface TerminalTabProps {
   tab: Tab
   tabId: string
@@ -397,6 +406,31 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
     }, 0)
     return () => window.clearTimeout(id)
   }, [active, tabId, overlayOpen])
+
+  // Clicking app chrome (sidebar, tab bar, buttons) steals focus from xterm.
+  // Hand it back once the click settles, unless the click landed in something
+  // that legitimately wants keyboard focus (inputs, dialogs, menus).
+  useEffect(() => {
+    if (!active || overlayOpen) return
+    let timer: number | undefined
+    const onClick = (event: MouseEvent) => {
+      const host = hostRef.current
+      if (!host || host.contains(event.target as Node)) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        if (document.querySelector('[role="dialog"], [role="menu"]')) return
+        if (isTextEntry(document.activeElement)) return
+        const selection = window.getSelection()
+        if (selection && !selection.isCollapsed) return
+        termRef.current?.focus()
+      }, 0)
+    }
+    document.addEventListener('click', onClick)
+    return () => {
+      document.removeEventListener('click', onClick)
+      window.clearTimeout(timer)
+    }
+  }, [active, overlayOpen])
 
   // After a reconnect re-attaches, the new pty starts at a default size; nudge
   // a resize so tmux/the remote shell repaints at the real terminal dimensions.
