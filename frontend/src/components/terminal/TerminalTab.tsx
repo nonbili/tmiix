@@ -409,15 +409,13 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
     return () => window.clearTimeout(id)
   }, [active, tabId, overlayOpen, disconnected])
 
-  // Clicking app chrome (sidebar, tab bar, buttons) steals focus from xterm.
-  // Hand it back once the click settles, unless the click landed in something
-  // that legitimately wants keyboard focus (inputs, dialogs, menus).
+  // Clicking or dragging app chrome (sidebar, tab bar, buttons) steals focus
+  // from xterm. Hand it back once the interaction settles, unless focus landed
+  // in something that legitimately wants keyboard focus (inputs, dialogs, menus).
   useEffect(() => {
     if (!active || overlayOpen || disconnected) return
     let timer: number | undefined
-    const onClick = (event: MouseEvent) => {
-      const host = hostRef.current
-      if (!host || host.contains(event.target as Node)) return
+    const scheduleFocusRestore = () => {
       window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         if (document.querySelector('[role="dialog"], [role="menu"]')) return
@@ -427,9 +425,23 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
         termRef.current?.focus()
       }, 0)
     }
+    const onClick = (event: MouseEvent) => {
+      const host = hostRef.current
+      if (!host || host.contains(event.target as Node)) return
+      scheduleFocusRestore()
+    }
+    const onPointerEnd = () => {
+      const host = hostRef.current
+      if (!host || host.contains(document.activeElement)) return
+      scheduleFocusRestore()
+    }
     document.addEventListener('click', onClick)
+    document.addEventListener('pointerup', onPointerEnd)
+    document.addEventListener('pointercancel', onPointerEnd)
     return () => {
       document.removeEventListener('click', onClick)
+      document.removeEventListener('pointerup', onPointerEnd)
+      document.removeEventListener('pointercancel', onPointerEnd)
       window.clearTimeout(timer)
     }
   }, [active, overlayOpen, disconnected])
