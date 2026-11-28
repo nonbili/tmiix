@@ -8,6 +8,7 @@ import { ConfirmDialog } from './components/dialog/ConfirmDialog'
 import { ShortcutsDialog } from './components/dialog/ShortcutsDialog'
 import { CommandPalette } from './components/palette/CommandPalette'
 import { SessionPalette } from './components/palette/SessionPalette'
+import { RunbookDialog } from './components/sidebar/RunbookDialog'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { TerminalWorkspace } from './components/terminal/TerminalWorkspace'
 import { Toaster } from './components/toast/Toaster'
@@ -33,6 +34,7 @@ function App() {
       <ConfirmDialog />
       <AboutDialog />
       <ShortcutsDialog />
+      <RunbookDialog />
       <Toaster />
     </div>
   )

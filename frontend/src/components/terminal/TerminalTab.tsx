@@ -9,6 +9,7 @@ import { ClipboardGetText, ClipboardSetText, EventsOn } from '../../lib/runtime'
 import { isMac, matchAction } from '../../lib/keybindings'
 import { getTheme } from '../../themes'
 import { ui$ } from '../../state/ui'
+import { runbookDialog$ } from '../../state/snippets'
 import { canOpenTmuxHere, checkTabForSession, handleTabReadyFromBackend, openTmuxHere, reconnectTab, updateTabLabel } from '../../state/tabs'
 import type { Tab } from '../../types'
 import { useContextMenu } from '../../lib/useContextMenu'
@@ -133,13 +134,41 @@ async function handlePasteEvent(tabId: string, terminal: Terminal, event: Clipbo
   }
 }
 
-function isTextEntry(el: Element | null): boolean {
+const MODIFIER_ONLY_KEYS = new Set([
+  'Shift',
+  'Control',
+  'Alt',
+  'Meta',
+  'AltGraph',
+  'CapsLock',
+  'NumLock',
+  'ScrollLock',
+  'OS',
+  'Super',
+  'Hyper',
+])
+
+function isAppTextEntry(el: Element | null): boolean {
   if (!el) return false
+  if (el.closest('.terminal-host')) return false
   if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return true
   if (el instanceof HTMLInputElement) {
     return !['button', 'checkbox', 'radio', 'submit', 'reset', 'range', 'color', 'file'].includes(el.type)
   }
   return (el as HTMLElement).isContentEditable === true
+}
+
+function isAppInteractiveControl(el: Element | null): boolean {
+  if (!el || el === document.body || el === document.documentElement) return false
+  if (el.closest('.terminal-host')) return false
+  if (el instanceof HTMLButtonElement || el instanceof HTMLAnchorElement || el instanceof HTMLInputElement) {
+    return true
+  }
+  return el instanceof HTMLElement && el.tabIndex >= 0
+}
+
+function hasOpenOverlay(): boolean {
+  return document.querySelector('[role="dialog"], [role="menu"]') !== null
 }
 
 interface TerminalTabProps {
@@ -160,7 +189,20 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
   const paletteOpen = useValue(ui$.palette.open)
   const commandPaletteOpen = useValue(ui$.commandPalette.open)
   const remotePaletteOpen = useValue(ui$.remotePalette.open)
-  const overlayOpen = paletteOpen || commandPaletteOpen || remotePaletteOpen
+  const askpassOpen = useValue(ui$.askpass.open)
+  const confirmOpen = useValue(ui$.confirm.open)
+  const aboutOpen = useValue(ui$.aboutOpen)
+  const shortcutsOpen = useValue(ui$.shortcutsOpen)
+  const runbookDialogOpen = useValue(runbookDialog$.open)
+  const overlayOpen =
+    paletteOpen ||
+    commandPaletteOpen ||
+    remotePaletteOpen ||
+    askpassOpen ||
+    confirmOpen ||
+    aboutOpen ||
+    shortcutsOpen ||
+    runbookDialogOpen
   const disconnected = tab.status === 'disconnected'
 
   useEffect(() => {
@@ -404,22 +446,21 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
         const d = fit.proposeDimensions()
         if (d) void ResizeTab(tabId, d.cols, d.rows)
       }
-      term?.focus()
+      if (!hasOpenOverlay() && !isAppTextEntry(document.activeElement)) term?.focus()
     }, 0)
     return () => window.clearTimeout(id)
   }, [active, tabId, overlayOpen, disconnected])
 
-  // Clicking or dragging app chrome (sidebar, tab bar, buttons) steals focus
-  // from xterm. Hand it back once the interaction settles, unless focus landed
-  // in something that legitimately wants keyboard focus (inputs, dialogs, menus).
+  // Keep the active terminal receiving input unless focus is legitimately in an
+  // app UI input component or an overlay (dialog/menu) is open.
   useEffect(() => {
     if (!active || overlayOpen || disconnected) return
     let timer: number | undefined
     const scheduleFocusRestore = () => {
       window.clearTimeout(timer)
       timer = window.setTimeout(() => {
-        if (document.querySelector('[role="dialog"], [role="menu"]')) return
-        if (isTextEntry(document.activeElement)) return
+        if (hasOpenOverlay()) return
+        if (isAppTextEntry(document.activeElement)) return
         const selection = window.getSelection()
         if (selection && !selection.isCollapsed) return
         termRef.current?.focus()
@@ -435,13 +476,55 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       if (!host || host.contains(document.activeElement)) return
       scheduleFocusRestore()
     }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
+      if (MODIFIER_ONLY_KEYS.has(event.key)) return
+      const host = hostRef.current
+      const term = termRef.current
+      if (!host || !term) return
+      const target = event.target instanceof Element ? event.target : null
+      if (host.contains(target) || host.contains(document.activeElement)) return
+      if (hasOpenOverlay()) return
+      if (isAppTextEntry(target) || isAppTextEntry(document.activeElement)) return
+      if (isAppInteractiveControl(target) || isAppInteractiveControl(document.activeElement)) return
+      if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) return
+
+      const selection = window.getSelection()
+      if (selection && !selection.isCollapsed && (event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'c') {
+        return
+      }
+
+      term.focus()
+      const textarea = term.textarea
+      if (!textarea) return
+      const forwarded = new KeyboardEvent('keydown', {
+        key: event.key,
+        code: event.code,
+        keyCode: event.keyCode,
+        which: event.which,
+        location: event.location,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        metaKey: event.metaKey,
+        repeat: event.repeat,
+        bubbles: false,
+        cancelable: true,
+      })
+      textarea.dispatchEvent(forwarded)
+      if (forwarded.defaultPrevented) {
+        event.preventDefault()
+      }
+    }
     document.addEventListener('click', onClick)
     document.addEventListener('pointerup', onPointerEnd)
     document.addEventListener('pointercancel', onPointerEnd)
+    window.addEventListener('keydown', onKeyDown)
     return () => {
       document.removeEventListener('click', onClick)
       document.removeEventListener('pointerup', onPointerEnd)
       document.removeEventListener('pointercancel', onPointerEnd)
+      window.removeEventListener('keydown', onKeyDown)
       window.clearTimeout(timer)
     }
   }, [active, overlayOpen, disconnected])
@@ -458,7 +541,9 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
         const d = fit.proposeDimensions()
         if (d) void ResizeTab(tabId, d.cols, d.rows)
       }
-      if (active && !overlayOpen) term?.focus()
+      if (active && !overlayOpen && !hasOpenOverlay() && !isAppTextEntry(document.activeElement)) {
+        term?.focus()
+      }
     }, 50)
     return () => window.clearTimeout(id)
   }, [tab.status, tabId, active, overlayOpen])

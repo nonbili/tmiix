@@ -3,7 +3,6 @@ import { FolderOpen, Plus, RefreshCw } from 'lucide-react'
 import { OpenSnippetsDir } from '../../../bindings/tmiix/app'
 import { openCreateRunbookDialog, refreshSnippets, snippetEditor$, snippets$ } from '../../state/snippets'
 import { IconButton } from '../button/IconButton'
-import { RunbookDialog } from './RunbookDialog'
 import { SidebarRunbookSection } from './SidebarRunbookSection'
 import { SnippetEditorPane } from './SnippetEditorPane'
 
@@ -53,8 +52,6 @@ export function SidebarSnippetsSection() {
           runbooks.map((runbook) => <SidebarRunbookSection key={runbook.name} runbook={runbook} />)
         )}
       </div>
-
-      <RunbookDialog />
     </div>
   )
 }
