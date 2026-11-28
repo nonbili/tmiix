@@ -186,6 +186,8 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
   const menu = useContextMenu()
   const onClosedRef = useRef(onClosed)
   onClosedRef.current = onClosed
+  const activeRef = useRef(active)
+  activeRef.current = active
   const paletteOpen = useValue(ui$.palette.open)
   const commandPaletteOpen = useValue(ui$.commandPalette.open)
   const remotePaletteOpen = useValue(ui$.remotePalette.open)
@@ -272,17 +274,33 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
         shift: ev.shiftKey,
       })
     }
+    const buttonMask = (button: number) => (button === 0 ? 1 : button === 1 ? 4 : button === 2 ? 2 : 0)
+    let terminalMouseButtons = 0
+    const onDocMouseDown = (ev: MouseEvent) => {
+      const mask = buttonMask(ev.button)
+      if (!mask) return
+      if (pasteTarget.contains(ev.target as Node) && activeRef.current) {
+        terminalMouseButtons |= mask
+      } else {
+        terminalMouseButtons &= ~mask
+      }
+    }
     const onDocDragMotion = (ev: MouseEvent) => {
-      if (!ev.buttons) return
-      const button = ev.buttons & 1 ? 0 /* LEFT */ : ev.buttons & 4 ? 1 /* MIDDLE */ : ev.buttons & 2 ? 2 /* RIGHT */ : 3 /* NONE */
+      if (!terminalMouseButtons) return
+      terminalMouseButtons &= ev.buttons
+      if (!terminalMouseButtons || !activeRef.current) return
+      const button =
+        terminalMouseButtons & 1 ? 0 /* LEFT */ : terminalMouseButtons & 4 ? 1 /* MIDDLE */ : terminalMouseButtons & 2 ? 2 /* RIGHT */ : 3 /* NONE */
       if (button === 3) return
       sendCoreMouse(ev, button, 32 /* MOVE */)
     }
     const onDocMouseUp = (ev: MouseEvent) => {
-      const button = ev.button < 3 ? ev.button : 3 /* NONE */
-      if (button === 3) return
-      sendCoreMouse(ev, button, 0 /* UP */)
+      const mask = buttonMask(ev.button)
+      if (!mask || !(terminalMouseButtons & mask)) return
+      terminalMouseButtons &= ~mask
+      sendCoreMouse(ev, ev.button, 0 /* UP */)
     }
+    document.addEventListener('mousedown', onDocMouseDown, true)
     document.addEventListener('mousemove', onDocDragMotion)
     document.addEventListener('mouseup', onDocMouseUp)
 
@@ -411,6 +429,7 @@ export function TerminalTab({ tab, tabId, active, themeId, onClosed }: TerminalT
       disposed = true
       ro.disconnect()
       pasteTarget.removeEventListener('paste', onPaste, true)
+      document.removeEventListener('mousedown', onDocMouseDown, true)
       document.removeEventListener('mousemove', onDocDragMotion)
       document.removeEventListener('mouseup', onDocMouseUp)
       data.dispose()
